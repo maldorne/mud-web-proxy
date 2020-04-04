@@ -69,7 +69,7 @@ let srv = {
   path: __dirname,
   ws_port: 6200 /* this websocket proxy port */,
   tn_host: 'muds.maldorne.org' /* default telnet host */,
-  tn_port: 5000 /* default telnet/target port */,
+  tn_port: 5010 /* default telnet/target port */,
   debug: false /* enable additional debugging */,
   compress: true /* use node zlib (different from mccp) - you want this turned off unless your server can't do MCCP and your client can inflate data */,
   open: true /* set to false while server is shutting down */,
