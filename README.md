@@ -2,7 +2,7 @@
 
 ### What is this?
 
-[node.js](https://nodejs.org/en/) microserver which provides a secure websocket (`wss://` protocol) to telnet (`telnet://`) proxy for [MUD](https://en.wikipedia.org/wiki/MUD) / MUSH / MOO game servers, supporting all major data interchange and interactive text protocols. You can use the [`mud-web-client`](https://github.com/houseofmaldorne/mud-web-client) project to achieve that.
+[node.js](https://nodejs.org/en/) microserver which provides a secure websocket (`wss://`) to telnet (`telnet://`) proxy for [MUD](https://en.wikipedia.org/wiki/MUD) / MUSH / MOO game servers, supporting all major data interchange and interactive text protocols. To connect and play a game, you will need to run in your web page a web client capable to connect through `wss` to this proxy, like [`mud-web-client`](https://github.com/houseofmaldorne/mud-web-client).
 
 ### History
 
