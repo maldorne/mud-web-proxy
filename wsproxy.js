@@ -163,10 +163,10 @@ let srv = {
     //   srv.log('(ws) server listening: port ' + srv.ws_port);
     // });
 
-    if (fs.existsSync('../cert.pem') && fs.existsSync('../privkey.pem')) {
+    if (fs.existsSync('./cert.pem') && fs.existsSync('./privkey.pem')) {
       webserver = https.createServer({
-        cert: fs.readFileSync('../cert1.pem'),
-        key: fs.readFileSync('../privkey1.pem'),
+        cert: fs.readFileSync('./cert.pem'),
+        key: fs.readFileSync('./privkey.pem'),
       });
     } else {
       // TODO: maybe fallback to non secure connection
