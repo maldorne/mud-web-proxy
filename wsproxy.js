@@ -143,8 +143,9 @@ let srv = {
   },
 
   init: function () {
+    /* eslint no-unused-vars: 0 */
     let webserver;
-    let wsServer; // eslint-disable-line no-unused-vars
+    let wsServer;
 
     server = {
       sockets: [],
