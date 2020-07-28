@@ -30,14 +30,14 @@
   "homepage": "https://github.com/houseofmaldorne/mud-web-proxy#readme",
   "devDependencies": {
     "babel-eslint": "^10.1.0",
-    "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.10.1",
+    "eslint": "^7.5.0",
+    "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-json-format": "^2.0.1",
-    "eslint-plugin-prettier": "^3.1.2",
-    "prettier": "^2.0.2"
+    "eslint-plugin-prettier": "^3.1.4",
+    "prettier": "^2.0.5"
   },
   "dependencies": {
-    "uglify-js": "^3.8.1",
-    "ws": "^7.2.3"
+    "uglify-js": "^3.10.0",
+    "ws": "^7.3.1"
   }
 }
