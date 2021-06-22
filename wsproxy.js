@@ -436,7 +436,8 @@ let srv = {
         //srv.initT(s);
       })
       .on('error', function (err) {
-        s.sendUTF(new Buffer(err.toString()).toString('base64'));
+        srv.log('error: ' + err.toString());
+        // s.sendUTF(new Buffer(err.toString()).toString('base64'));
         srv.closeSocket(s);
       });
   },
