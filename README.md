@@ -36,5 +36,23 @@ sudo node wsproxy.js
 
 ## Configuration
 
-To Do
+You need to have your certificates available to use wsproxy. If you start the proxy without certificates, you'll see something like this:
 
+``` bash
+$ sudo node wsproxy.js
+Could not find cert and/or privkey files, exiting.
+```
+
+You need to have available both files in the same directory as the proxy, like this:
+
+``` bash
+$ ls
+cert.pem  chat.json  LICENSE.md  node_modules  package.json  package-lock.json  privkey.pem  README.md  wsproxy.js
+```
+
+where `cert.pem` and `privkey.pem` will be links to the real files, something like:
+
+``` bash
+cert.pem -> /etc/letsencrypt/live/...somewhere.../cert.pem
+privkey.pem -> /etc/letsencrypt/live/...somewhere.../privkey.pem
+```
