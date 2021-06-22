@@ -126,18 +126,7 @@ let srv = {
     WILL_CHARSET: new Buffer([255, 251, 42]),
     WILL_UTF8: new Buffer([255, 250, 42, 2, 85, 84, 70, 45, 56, 255, 240]),
     ACCEPT_UTF8: new Buffer([
-      255,
-      250,
-      2,
-      34,
-      85,
-      84,
-      70,
-      45,
-      56,
-      34,
-      255,
-      240,
+      255, 250, 2, 34, 85, 84, 70, 45, 56, 34, 255, 240,
     ]),
     //WILL_UTF8:    new Buffer([ 255, 250, 42, 2, "UTF-8", 255, 240 ])
   },
@@ -415,8 +404,17 @@ let srv = {
         srv.log('new telnet socket connected');
 
         setTimeout(function () {
-          s.utf8_negotiated = s.mccp_negotiated = s.mxp_negotiated = s.gmcp_negotiated = 1;
-          s.new_negotiated = s.new_handshake = s.sga_negotiated = s.echo_negotiated = s.naws_negotiated = 1;
+          s.utf8_negotiated =
+            s.mccp_negotiated =
+            s.mxp_negotiated =
+            s.gmcp_negotiated =
+              1;
+          s.new_negotiated =
+            s.new_handshake =
+            s.sga_negotiated =
+            s.echo_negotiated =
+            s.naws_negotiated =
+              1;
         }, 12000);
 
         srv.chatUpdate();
@@ -438,7 +436,7 @@ let srv = {
         //srv.initT(s);
       })
       .on('error', function (err) {
-        s.sendUTF(new Buffer(err).toString('base64'));
+        s.sendUTF(new Buffer(err.toString()).toString('base64'));
         srv.closeSocket(s);
       });
   },
