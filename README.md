@@ -34,8 +34,6 @@ npm install
 sudo node wsproxy.js
 ```
 
-## Configuration
-
 You need to have your certificates available to use wsproxy. If you start the proxy without certificates, you'll see something like this:
 
 ``` bash
@@ -56,3 +54,29 @@ where `cert.pem` and `privkey.pem` will be links to the real files, something li
 cert.pem -> /etc/letsencrypt/live/...somewhere.../cert.pem
 privkey.pem -> /etc/letsencrypt/live/...somewhere.../privkey.pem
 ```
+
+How to install the certificates is beyond the scope of this project, but you could use [Certbot](https://certbot.eff.org/about/). You can find installation instructions for evert operating system there. 
+
+
+## Configuration
+
+In `wsproxy.js` you can change the following options:
+
+``` javascript
+  /* this websocket proxy port */
+  ws_port: 6200,
+  /* default telnet host */
+  tn_host: 'muds.maldorne.org',
+  /* default telnet/target port */
+  tn_port: 5010,
+  /* enable additional debugging */
+  debug: false,
+  /* use node zlib (different from mccp) - you want this turned off unless your server can't do MCCP and your client can inflate data */
+  compress: true,
+  /* set to false while server is shutting down */
+  open: true,
+```
+
+Probably you will only have to change:
+ * `tn_host` with your hostname (`localhost` or `127.0.0.1` don't seem to work (see conversation here)[https://github.com/houseofmaldorne/mud-web-proxy/issues/5#issuecomment-866464161])
+ * `tn_port` with the port where the mud is running.
