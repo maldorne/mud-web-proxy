@@ -55,7 +55,7 @@ cert.pem -> /etc/letsencrypt/live/...somewhere.../cert.pem
 privkey.pem -> /etc/letsencrypt/live/...somewhere.../privkey.pem
 ```
 
-How to install the certificates is beyond the scope of this project, but you could use [Certbot](https://certbot.eff.org/about/). You can find installation instructions for evert operating system there. 
+How to install the certificates is beyond the scope of this project, but you could use [Certbot](https://certbot.eff.org/about/). You can find installation instructions for every operating system there. 
 
 
 ## Configuration
