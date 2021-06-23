@@ -78,5 +78,5 @@ In `wsproxy.js` you can change the following options:
 ```
 
 Probably you will only have to change:
- * `tn_host` with your hostname (`localhost` or `127.0.0.1` don't seem to work (see conversation here)[https://github.com/houseofmaldorne/mud-web-proxy/issues/5#issuecomment-866464161])
+ * `tn_host` with your hostname. `localhost` or `127.0.0.1` don't seem to work: [see conversation here](https://github.com/houseofmaldorne/mud-web-proxy/issues/5#issuecomment-866464161).
  * `tn_port` with the port where the mud is running.
