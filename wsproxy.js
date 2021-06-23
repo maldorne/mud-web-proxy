@@ -67,12 +67,18 @@ const stringify = function (A) {
 
 let srv = {
   path: __dirname,
-  ws_port: 6200 /* this websocket proxy port */,
-  tn_host: 'muds.maldorne.org' /* default telnet host */,
-  tn_port: 5010 /* default telnet/target port */,
-  debug: false /* enable additional debugging */,
-  compress: true /* use node zlib (different from mccp) - you want this turned off unless your server can't do MCCP and your client can inflate data */,
-  open: true /* set to false while server is shutting down */,
+  /* this websocket proxy port */
+  ws_port: 6200,
+  /* default telnet host */
+  tn_host: 'muds.maldorne.org',
+  /* default telnet/target port */
+  tn_port: 5010,
+  /* enable additional debugging */
+  debug: false,
+  /* use node zlib (different from mccp) - you want this turned off unless your server can't do MCCP and your client can inflate data */
+  compress: true,
+  /* set to false while server is shutting down */
+  open: true,
 
   ttype: {
     enabled: 1,
@@ -160,7 +166,7 @@ let srv = {
       });
     } else {
       // TODO: maybe fallback to non secure connection
-      console.log('Could not find cert and/or privkey files, exiting.');
+      srv.log('Could not find cert and/or privkey files, exiting.');
       process.exit();
     }
 
@@ -174,10 +180,10 @@ let srv = {
       // autoAcceptConnections: false,
       // keepalive: true
     }).on('connection', function connection(socket, req) {
-      srv.log('(ws) new connection');
+      srv.log('(ws on connection) new connection');
       if (!socket.req) socket.req = req;
       server.sockets.push(socket);
-      srv.log('(ws) connection count: ' + server.sockets.length);
+      srv.log('(ws on connection) connection count: ' + server.sockets.length);
 
       socket.on('message', function message(msg) {
         // if (msg.type === 'utf8') {
@@ -189,48 +195,49 @@ let srv = {
         // }
       });
     });
-
     /*
-    .on('request', function(request) {
-
-      if (!srv.open || !srv.originAllowed(request.origin)) {
-        request.reject();
-        srv.log('(ws) connection from ' + request.origin + ' rejected');
-        return;
-      }
-
-      let s = request.accept(null, request.origin);
-      s.ttype = [];
-      
-      srv.log('(ws) new connection');
-      server.sockets.push(s);
-      
-      srv.log('(ws) connection count: '+server.sockets.length);
-  
-      s.on('message', function(msg) {
-        if (msg.type === 'utf8') {  
-          msg = msg.utf8Data;
-          if (!srv.parse(s, msg))
-            srv.forward(s, msg);
+      .on('request', function (request) {
+        if (!srv.open || !srv.originAllowed(request.origin)) {
+          request.reject();
+          srv.log(
+            '(ws on request) connection from ' + request.origin + ' rejected'
+          );
+          return;
         }
-        else {
-          srv.log('unrecognized msg type: ' + msg.type);
-        }
+
+        let s = request.accept(null, request.origin);
+        s.ttype = [];
+
+        srv.log('(ws on request) new connection');
+        server.sockets.push(s);
+
+        srv.log('(ws on request) connection count: ' + server.sockets.length);
+
+        s.on('message', function (msg) {
+          if (msg.type === 'utf8') {
+            msg = msg.utf8Data;
+            if (!srv.parse(s, msg)) srv.forward(s, msg);
+          } else {
+            srv.log('unrecognized msg type: ' + msg.type);
+          }
+        })
+          .on('close', function (reasonCode, description) {
+            srv.log(
+              new Date() + '(ws) peer ' + s.remoteAddress + ' disconnected.'
+            );
+            srv.closeSocket(s);
+          })
+          .on('error', function (err) {
+            srv.log(
+              new Date() + '(ws) peer ' + s.remoteAddress + ' error: ' + err
+            );
+            //srv.closeSocket(s);
+          });
       })
-      .on('close', function(reasonCode, description) {
-        srv.log((new Date()) + '(ws) peer ' + s.remoteAddress + ' disconnected.');
-        srv.closeSocket(s);
-      })
-      .on('error', function(err) {
-        srv.log((new Date()) + '(ws) peer ' + s.remoteAddress + ' error: ' + err);
-        //srv.closeSocket(s);
+      .on('error', function (err) {
+        srv.log(err);
       });
-      
-    })
-    .on('error', function(err) {
-      srv.log(err);
-    });
-    */
+      */
 
     fs.watch(srv.path + '/wsproxy.js', function (e, f) {
       if (srv['update-' + f]) clearTimeout(srv['update-' + f]);
@@ -375,26 +382,23 @@ let srv = {
       );
     });
 
-    //s.ts.setEncoding('binary');
+    // s.ts.setEncoding('binary');
 
     s.ts.send = function (data) {
-      /*    
-      if (s.debug) {
+      if (srv.debug) {
         let raw = [];
-          for (let i = 0; i < data.length; i++)
-            raw.push(u.format('%d', data[i]));
-        //srv.log('write bin: '+raw, s);
+        for (let i = 0; i < data.length; i++)
+          raw.push(u.format('%d', data[i]));
+        srv.log('write bin: ' + raw.toString(), s);
       }
-*/
 
       try {
         data = iconv.encode(data, 'latin1');
-        //console.log(data);
       } catch (ex) {
-        console.log(ex);
+        srv.log('error: ' + ex.toString(), s);
       }
 
-      s.ts.write(data);
+      if (s.ts.writable) s.ts.write(data);
     };
 
     s.ts
@@ -424,21 +428,26 @@ let srv = {
       })
       .on('timeout', function () {
         srv.log('telnet socket timeout: ' + s);
-        s.sendUTF(
-          new Buffer('Timeout: server port is down.\r\n').toString('base64')
-        );
-        srv.closeSocket(s);
+        srv.sendClient(s, new Buffer('Timeout: server port is down.\r\n'));
+        setTimeout(function () {
+          srv.closeSocket(s);
+        }, 500);
       })
       .on('close', function () {
         srv.log('telnet socket closed: ' + s.remoteAddress);
-        srv.closeSocket(s);
         srv.chatUpdate();
-        //srv.initT(s);
+        setTimeout(function () {
+          srv.closeSocket(s);
+        }, 500);
+        // srv.initT(s);
       })
       .on('error', function (err) {
         srv.log('error: ' + err.toString());
-        // s.sendUTF(new Buffer(err.toString()).toString('base64'));
-        srv.closeSocket(s);
+        // srv.sendClient(s, new Buffer(err.toString()));
+        srv.sendClient(s, new Buffer('Error: maybe the mud server is down?'));
+        setTimeout(function () {
+          srv.closeSocket(s);
+        }, 500);
       });
   },
 
@@ -683,12 +692,11 @@ let srv = {
       }
     }
 
-    if (s.debug) {
-      /*let raw = [];
-      for (i = 0; i < data.length; i++)
-        raw.push(u.format('%d', data[i]));
-      srv.log('bin: '+raw, s);*/
-      srv.log('raw: ' + data, s);
+    if (srv.debug) {
+      let raw = [];
+      for (let i = 0; i < data.length; i++) raw.push(u.format('%d', data[i]));
+      srv.log('raw bin: ' + raw, s);
+      // srv.log('raw: ' + data, s);
     }
 
     if (!srv.compress || (s.mccp && s.compressed)) {
@@ -698,8 +706,11 @@ let srv = {
 
     /* Client<->Proxy only Compression */
     zlib.deflateRaw(data, function (err, buffer) {
-      if (!err) s.send(buffer.toString('base64'));
-      else srv.log('zlib error: ' + err);
+      if (!err) {
+        s.send(buffer.toString('base64'));
+      } else {
+        srv.log('zlib error: ' + err);
+      }
     });
   },
 
@@ -784,21 +795,27 @@ let srv = {
   },
 
   log: function (msg, s) {
-    if (!s) s = { req: { connection: { remoteAddress: '[]' } } };
+    if (!s) s = { req: { connection: { remoteAddress: '' } } };
+    // eslint-disable-next-line no-console
     console.log(
-      u.format(new Date() + ' %s: %s', s.req.connection.remoteAddress, msg)
+      u.format(
+        new Date().toISOString() + ' %s: %s',
+        s.req.connection.remoteAddress,
+        msg
+      )
     );
   },
 
   die: function (core) {
     srv.log('Dying gracefully in 3 sec.');
     let ss = server.sockets;
+
     for (let i = 0; i < ss.length; i++) {
-      ss[i].write(
-        'Proxy server is going down...'
-      ); /* inform clients so they can hop to another instance faster */
+      /* inform clients so they can hop to another instance faster */
+      if (ss[i] && ss[i].write) ss[i].write('Proxy server is going down...');
       setTimeout(srv.closeSocket, 10, ss[i]);
     }
+
     setTimeout(
       process.exit,
       3000,
@@ -819,9 +836,11 @@ let srv = {
     s.on('data', function (d) {
       srv.forward(s, d);
     });
+
     s.on('end', function () {
       srv.closeSocket(s);
     });
+
     s.on('error', function () {
       srv.closeSocket(s);
     });
