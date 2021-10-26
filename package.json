@@ -30,7 +30,7 @@
   "homepage": "https://github.com/houseofmaldorne/mud-web-proxy#readme",
   "devDependencies": {
     "babel-eslint": "^10.1.0",
-    "eslint": "^7.32.0",
+    "eslint": "^8.1.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-json-format": "^2.0.1",
     "eslint-plugin-prettier": "^4.0.0",
@@ -39,6 +39,6 @@
   "dependencies": {
     "iconv-lite": "^0.6.3",
     "uglify-js": "^3.14.2",
-    "ws": "^8.2.2"
+    "ws": "^8.2.3"
   }
 }
