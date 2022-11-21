@@ -27,7 +27,7 @@
     
     JSON requests with { "chat": 1 } will be intercepted and handled
     by the basic in-proxy chat system.
-  
+
 */
 
 let u = require('util');
