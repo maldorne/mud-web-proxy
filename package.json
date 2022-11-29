@@ -21,13 +21,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/houseofmaldorne/mud-web-proxy.git"
+    "url": "git+https://github.com/maldorne/mud-web-proxy.git"
   },
   "license": "gpl-3.0",
   "bugs": {
-    "url": "https://github.com/houseofmaldorne/mud-web-proxy/issues"
+    "url": "https://github.com/maldorne/mud-web-proxy/issues"
   },
-  "homepage": "https://github.com/houseofmaldorne/mud-web-proxy#readme",
+  "homepage": "https://github.com/maldorne/mud-web-proxy#readme",
   "devDependencies": {
     "@babel/eslint-parser": "^7.19.1",
     "eslint": "^8.28.0",

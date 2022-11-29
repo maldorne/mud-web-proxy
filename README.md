@@ -2,7 +2,7 @@
 
 ### What is this?
 
-[node.js](https://nodejs.org/en/) microserver which provides a secure websocket (`wss://`) to telnet (`telnet://`) proxy for [MUD](https://en.wikipedia.org/wiki/MUD) / MUSH / MOO game servers, supporting all major data interchange and interactive text protocols. To connect and play a game, you will need to run in your web page a web client capable to connect through `wss` to this proxy, like [`mud-web-client`](https://github.com/houseofmaldorne/mud-web-client).
+[node.js](https://nodejs.org/en/) microserver which provides a secure websocket (`wss://`) to telnet (`telnet://`) proxy for [MUD](https://en.wikipedia.org/wiki/MUD) / MUSH / MOO game servers, supporting all major data interchange and interactive text protocols. To connect and play a game, you will need to run in your web page a web client capable to connect through `wss` to this proxy, like [`mud-web-client`](https://github.com/maldorne/mud-web-client).
 
 ### History
 
@@ -29,7 +29,7 @@ In modern browsers, web-pages served through `https://` are not allowed to open 
 ## Installation
 
 ``` bash
-git clone https://github.com/houseofmaldorne/mud-web-proxy
+git clone https://github.com/maldorne/mud-web-proxy
 npm install
 sudo node wsproxy.js
 ```
@@ -78,5 +78,5 @@ In `wsproxy.js` you can change the following options:
 ```
 
 Probably you will only have to change:
- * `tn_host` with your hostname. `localhost` or `127.0.0.1` don't seem to work: [see conversation here](https://github.com/houseofmaldorne/mud-web-proxy/issues/5#issuecomment-866464161).
+ * `tn_host` with your hostname. `localhost` or `127.0.0.1` don't seem to work: [see conversation here](https://github.com/maldorne/mud-web-proxy/issues/5#issuecomment-866464161).
  * `tn_port` with the port where the mud is running.
