@@ -386,7 +386,7 @@ let srv = {
           new Buffer(
             'This proxy does not allow connections to servers different to ' +
               srv.tn_host +
-              '\r\nTake a look in ' +
+              '.\r\nTake a look in ' +
               REPOSITORY_URL +
               ' and install it in your own server.\r\n'
           )
