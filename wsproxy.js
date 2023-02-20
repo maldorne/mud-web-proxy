@@ -41,6 +41,7 @@ let iconv = require('iconv-lite');
 // if this is true, only allow connections to srv.tn_host, ignoring
 // the server sent as argument by the client
 const ONLY_ALLOW_DEFAULT_SERVER = true;
+const REPOSITORY_URL = 'https://github.com/maldorne/mud-web-proxy/';
 
 // let first = (typeof srv == 'undefined');
 let server = {};
@@ -386,10 +387,14 @@ let srv = {
           new Buffer(
             'This proxy does not allow connection to servers different to ' +
               srv.tn_host +
-              'Take a look to https://github.com/maldorne/mud-web-proxy/ and install it in your own server.\r\n'
+              'Take a look in ' +
+              REPOSITORY_URL +
+              ' and install it in your own server.\r\n'
           )
         );
-        srv.closeSocket(s);
+        setTimeout(function () {
+          srv.closeSocket(s);
+        }, 500);
         return;
       }
     }
