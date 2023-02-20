@@ -368,9 +368,18 @@ let srv = {
     let host = s.host || srv.tn_host;
     let port = s.port || srv.tn_port;
 
+    if (!s.ttype) s.ttype = [];
+
+    s.ttype = s.ttype.concat(srv.ttype.portal.slice(0));
+    s.ttype.push(s.remoteAddress);
+    s.ttype.push(s.remoteAddress);
+
+    s.compressed = 0;
+
     // do not allow the proxy connect to different servers
     if (ONLY_ALLOW_DEFAULT_SERVER) {
       if (s.host !== srv.tn_host) {
+        srv.log('avoid connection attempt to: ' + s.host + ':' + s.port, s);
         srv.sendClient(
           s,
           new Buffer(
@@ -379,18 +388,9 @@ let srv = {
               'Take a look to https://github.com/maldorne/mud-web-proxy/ and install it in your own server.\r\n'
           )
         );
-        srv.log('attempt connection to: ' + s.host + ':' + s.port, s);
         srv.closeSocket(s);
       }
     }
-
-    if (!s.ttype) s.ttype = [];
-
-    s.ttype = s.ttype.concat(srv.ttype.portal.slice(0));
-    s.ttype.push(s.remoteAddress);
-    s.ttype.push(s.remoteAddress);
-
-    s.compressed = 0;
 
     s.ts = net.createConnection(port, host, function () {
       srv.log(
