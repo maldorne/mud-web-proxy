@@ -390,6 +390,7 @@ let srv = {
           )
         );
         srv.closeSocket(s);
+        return;
       }
     }
 
