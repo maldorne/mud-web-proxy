@@ -381,13 +381,12 @@ let srv = {
     if (ONLY_ALLOW_DEFAULT_SERVER) {
       if (s.host !== srv.tn_host) {
         srv.log('avoid connection attempt to: ' + s.host + ':' + s.port, s);
-        srv.sendClient(s, new Buffer('Error: maybe the mud server is down?'));
         srv.sendClient(
           s,
           new Buffer(
-            'This proxy does not allow connection to servers different to ' +
+            'This proxy does not allow connections to servers different to ' +
               srv.tn_host +
-              'Take a look in ' +
+              '\r\nTake a look in ' +
               REPOSITORY_URL +
               ' and install it in your own server.\r\n'
           )
