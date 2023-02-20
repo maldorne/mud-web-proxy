@@ -380,11 +380,14 @@ let srv = {
     if (ONLY_ALLOW_DEFAULT_SERVER) {
       if (s.host !== srv.tn_host) {
         srv.log('avoid connection attempt to: ' + s.host + ':' + s.port, s);
-        srv.sendTTYPE(
+        srv.sendClient(s, new Buffer('Error: maybe the mud server is down?'));
+        srv.sendClient(
           s,
-          'This proxy does not allow connection to servers different to ' +
-            srv.tn_host +
-            'Take a look to https://github.com/maldorne/mud-web-proxy/ and install it in your own server.\r\n'
+          new Buffer(
+            'This proxy does not allow connection to servers different to ' +
+              srv.tn_host +
+              'Take a look to https://github.com/maldorne/mud-web-proxy/ and install it in your own server.\r\n'
+          )
         );
         srv.closeSocket(s);
       }
