@@ -5,9 +5,6 @@
   Author: plamzi - plamzi@gmail.com 
   MIT license
   
-  Requires https://github.com/Worlize/WebSocket-Node
-  In your project root: npm install websocket
-  
   Supports client setting any host and port prior to connect.
   
   Example (client-side JS):
@@ -27,7 +24,6 @@
     
     JSON requests with { "chat": 1 } will be intercepted and handled
     by the basic in-proxy chat system.
-
 */
 
 let u = require('util');
@@ -41,6 +37,10 @@ let ug = require('uglify-js');
 let ws = require('ws').Server;
 let iconv = require('iconv-lite');
 // iconv.extendNodeEncodings();
+
+// if this is true, only allow connections to srv.tn_host, ignoring
+// the server sent as argument by the client
+const ONLY_ALLOW_DEFAULT_SERVER = true;
 
 // let first = (typeof srv == 'undefined');
 let server = {};
@@ -367,6 +367,22 @@ let srv = {
     let s = so;
     let host = s.host || srv.tn_host;
     let port = s.port || srv.tn_port;
+
+    // do not allow the proxy connect to different servers
+    if (ONLY_ALLOW_DEFAULT_SERVER) {
+      if (s.host !== srv.tn_host) {
+        srv.sendClient(
+          s,
+          new Buffer(
+            'This proxy does not allow connection to servers different to ' +
+              srv.tn_host +
+              'Take a look to https://github.com/maldorne/mud-web-proxy/ and install it in your own server.\r\n'
+          )
+        );
+        srv.log('attempt connection to: ' + s.host + ':' + s.port, s);
+        srv.closeSocket(s);
+      }
+    }
 
     if (!s.ttype) s.ttype = [];
 

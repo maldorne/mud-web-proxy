@@ -26,6 +26,8 @@ In modern browsers, web-pages served through `https://` are not allowed to open 
 
 * Unicode font support and UTF-8 negotiation
 
+* To avoid abuse, default installation only allows connection to an specific server, although it can be configured to connect to any server sent by the client as an argument.
+
 ## Installation
 
 ``` bash
