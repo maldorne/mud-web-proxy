@@ -388,8 +388,8 @@ let srv = {
               srv.tn_host +
               '.\r\nTake a look in ' +
               REPOSITORY_URL +
-              ' and install it in your own server.\r\n'
-          )
+              ' and install it in your own server.\r\n',
+          ),
         );
         setTimeout(function () {
           srv.closeSocket(s);
@@ -400,7 +400,7 @@ let srv = {
 
     s.ts = net.createConnection(port, host, function () {
       srv.log(
-        'new connection to ' + host + ':' + port + ' for ' + s.remoteAddress
+        'new connection to ' + host + ':' + port + ' for ' + s.remoteAddress,
       );
     });
 
@@ -478,7 +478,7 @@ let srv = {
       srv.log(
         'closing telnet socket: ' + s.host ||
           srv.tn_host + ':' + s.port ||
-          srv.tn_port
+          srv.tn_port,
       );
       // s.ts.destroy();
       s.terminate();
@@ -823,8 +823,8 @@ let srv = {
       u.format(
         new Date().toISOString() + ' %s: %s',
         s.req.connection.remoteAddress,
-        msg
-      )
+        msg,
+      ),
     );
   },
 
@@ -841,7 +841,7 @@ let srv = {
     setTimeout(
       process.exit,
       3000,
-      core ? 3 : 0
+      core ? 3 : 0,
     ); /* send SIGQUIT if core dump */
   },
 
