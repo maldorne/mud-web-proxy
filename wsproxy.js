@@ -155,7 +155,7 @@ let srv = {
     ACCEPT_UTF8: Buffer.from([
       255, 250, 2, 34, 85, 84, 70, 45, 56, 34, 255, 240,
     ]),
-    //WILL_UTF8:    new Buffer([ 255, 250, 42, 2, "UTF-8", 255, 240 ])
+    //WILL_UTF8:    Buffer.from([ 255, 250, 42, 2, "UTF-8", 255, 240 ])
   },
 
   init: async function () {
@@ -317,7 +317,7 @@ let srv = {
     if (req.bin && s.ts) {
       try {
         srv.log('Attempt binary send: ' + req.bin);
-        s.ts.send(new Buffer(req.bin));
+        s.ts.send(Buffer.from(req.bin));
       } catch (ex) {
         srv.log(ex);
       }
@@ -339,9 +339,9 @@ let srv = {
     if (msg) {
       let p = srv.prt;
       s.ts.write(p.WILL_TTYPE);
-      s.ts.write(new Buffer([p.IAC, p.SB, p.TTYPE, p.IS]));
+      s.ts.write(Buffer.from([p.IAC, p.SB, p.TTYPE, p.IS]));
       s.ts.send(msg);
-      s.ts.write(new Buffer([p.IAC, p.SE]));
+      s.ts.write(Buffer.from([p.IAC, p.SE]));
       srv.log(msg);
     }
   },
@@ -354,9 +354,9 @@ let srv = {
 
   sendMXP: function (s, msg) {
     let p = srv.prt;
-    s.ts.write(new Buffer([p.ESC]));
+    s.ts.write(Buffer.from([p.ESC]));
     s.ts.write('[1z' + msg);
-    s.ts.write(new Buffer([p.ESC]));
+    s.ts.write(Buffer.from([p.ESC]));
     s.ts.write('[7z');
   },
 
@@ -366,27 +366,27 @@ let srv = {
 
     if (!msdp.key || !msdp.val) return;
 
-    s.ts.write(new Buffer([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
+    s.ts.write(Buffer.from([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
     s.ts.write(msdp.key);
 
     msdp.val = msdp.val.pop ? msdp.val : [msdp.val];
 
     for (let i = 0; i < msdp.val.length; i++) {
-      s.ts.write(new Buffer([p.MSDP_VAL]));
+      s.ts.write(Buffer.from([p.MSDP_VAL]));
       s.ts.write(msdp.val[i]);
     }
 
-    s.ts.write(new Buffer([p.IAC, p.SE]));
+    s.ts.write(Buffer.from([p.IAC, p.SE]));
   },
 
   sendMSDPPair: function (s, key, val) {
     let p = srv.prt;
     srv.log('sendMSDPPair ' + key + '=' + val, s);
-    s.ts.write(new Buffer([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
+    s.ts.write(Buffer.from([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
     s.ts.write(key);
-    s.ts.write(new Buffer([p.MSDP_VAL]));
+    s.ts.write(Buffer.from([p.MSDP_VAL]));
     s.ts.write(val);
-    s.ts.write(new Buffer([p.IAC, p.SE]));
+    s.ts.write(Buffer.from([p.IAC, p.SE]));
   },
 
   initT: function (so) {
@@ -408,7 +408,7 @@ let srv = {
         srv.log('avoid connection attempt to: ' + s.host + ':' + s.port, s);
         srv.sendClient(
           s,
-          new Buffer(
+          Buffer.from(
             'This proxy does not allow connections to servers different to ' +
               srv.tn_host +
               '.\r\nTake a look in ' +
@@ -475,7 +475,7 @@ let srv = {
       })
       .on('timeout', function () {
         srv.log('telnet socket timeout: ' + s);
-        srv.sendClient(s, new Buffer('Timeout: server port is down.\r\n'));
+        srv.sendClient(s, Buffer.from('Timeout: server port is down.\r\n'));
         setTimeout(function () {
           srv.closeSocket(s);
         }, 500);
@@ -490,8 +490,8 @@ let srv = {
       })
       .on('error', function (err) {
         srv.log('error: ' + err.toString());
-        // srv.sendClient(s, new Buffer(err.toString()));
-        srv.sendClient(s, new Buffer('Error: maybe the mud server is down?'));
+        // srv.sendClient(s, Buffer.from(err.toString()));
+        srv.sendClient(s, Buffer.from('Error: maybe the mud server is down?'));
         setTimeout(function () {
           srv.closeSocket(s);
         }, 500);
@@ -632,7 +632,7 @@ let srv = {
     if (!s.mxp_negotiated) {
       for (let i = 0; i < data.length; i++) {
         if (data[i] == p.IAC && data[i + 1] == p.DO && data[i + 2] == p.MXP) {
-          s.ts.write(new Buffer([p.IAC, p.WILL, p.MXP]));
+          s.ts.write(Buffer.from([p.IAC, p.WILL, p.MXP]));
           srv.log('IAC DO MXP <- IAC WILL MXP', s);
           s.mxp_negotiated = 1;
         } else if (
@@ -640,7 +640,7 @@ let srv = {
           data[i + 1] == p.WILL &&
           data[i + 2] == p.MXP
         ) {
-          s.ts.write(new Buffer([p.IAC, p.DO, p.MXP]));
+          s.ts.write(Buffer.from([p.IAC, p.DO, p.MXP]));
           srv.log('IAC WILL MXP <- IAC DO MXP', s);
           s.mxp_negotiated = 1;
         }
@@ -650,7 +650,7 @@ let srv = {
     if (!s.new_negotiated) {
       for (let i = 0; i < data.length; i++) {
         if (data[i] == p.IAC && data[i + 1] == p.DO && data[i + 2] == p.NEW) {
-          s.ts.write(new Buffer([p.IAC, p.WILL, p.NEW]));
+          s.ts.write(Buffer.from([p.IAC, p.WILL, p.NEW]));
           srv.log('IAC WILL NEW-ENV', s);
           s.new_negotiated = 1;
         }
@@ -663,11 +663,11 @@ let srv = {
           data[i + 2] == p.NEW &&
           data[i + 3] == p.REQUEST
         ) {
-          s.ts.write(new Buffer([p.IAC, p.SB, p.NEW, p.IS, p.IS]));
+          s.ts.write(Buffer.from([p.IAC, p.SB, p.NEW, p.IS, p.IS]));
           s.ts.write('IPADDRESS');
-          s.ts.write(new Buffer([p.REQUEST]));
+          s.ts.write(Buffer.from([p.REQUEST]));
           s.ts.write(s.remoteAddress);
-          s.ts.write(new Buffer([p.IAC, p.SE]));
+          s.ts.write(Buffer.from([p.IAC, p.SE]));
           srv.log('IAC NEW-ENV IP VAR SEND');
           s.new_handshake = 1;
         }
@@ -681,7 +681,7 @@ let srv = {
           data[i + 1] == p.WILL &&
           data[i + 2] == p.ECHO
         ) {
-          //s.ts.send(new Buffer([p.IAC, p.WILL, p.ECHO]));
+          //s.ts.send(Buffer.from([p.IAC, p.WILL, p.ECHO]));
           srv.log('IAC WILL ECHO <- IAC WONT ECHO');
           // set a flag to avoid logging the next message (maybe passwords)
           s.password_mode = true;
@@ -697,7 +697,7 @@ let srv = {
           data[i + 1] == p.WILL &&
           data[i + 2] == p.SGA
         ) {
-          s.ts.write(new Buffer([p.IAC, p.WONT, p.SGA]));
+          s.ts.write(Buffer.from([p.IAC, p.WONT, p.SGA]));
           srv.log('IAC WILL SGA <- IAC WONT SGA');
           s.sga_negotiated = 1;
         }
@@ -711,7 +711,7 @@ let srv = {
           data[i + 1] == p.WILL &&
           data[i + 2] == p.NAWS
         ) {
-          s.ts.write(new Buffer([p.IAC, p.WONT, p.NAWS]));
+          s.ts.write(Buffer.from([p.IAC, p.WONT, p.NAWS]));
           srv.log('IAC WILL SGA <- IAC WONT NAWS');
           s.naws_negotiated = 1;
         }
