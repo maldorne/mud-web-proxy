@@ -6,7 +6,9 @@
 
 ### History
 
-This project is a fork of [MUDPortal-Web-App](https://github.com/plamzi/MUDPortal-Web-App), made by [@plamzi](https://github.com/plamzi), creator of [mudportal.com](http://www.mudportal.com/). The original project had the code of both the client and proxy-server apps, and was outdated and did not support secure connections (`wss://` instead of `ws://`), so I decided to fork it, separate in different projects and update them. But kudos to [@plamzi](https://github.com/plamzi), who is the original author.
+This project is a fork of [MUDPortal-Web-App](https://github.com/plamzi/MUDPortal-Web-App), made by [@plamzi](https://github.com/plamzi), creator of [mudportal.com](http://www.mudportal.com/). The original project had the code of both the client and proxy-server apps, and was outdated and did not support secure connections (`wss://` instead of `ws://`), so I decided to fork it in 2020, separate in different projects and update them. But kudos to [@plamzi](https://github.com/plamzi), who is the original author.
+
+In 2025, I've ported the project to use ES modules.
 
 ### Motivation
 
@@ -14,19 +16,13 @@ In modern browsers, web-pages served through `https://` are not allowed to open 
 
 ## Features
 
-* MCCP compression support (zlib)
-
-* MXP protocol support built into the client
-
-* MSDP protocol support
-
-* GMCP / ATCP protocol support (JSON) with sample uses in multiple existing plugins
-
-* 256-color support, including background colors
-
-* Unicode font support and UTF-8 negotiation
-
-* To avoid abuse, default installation only allows connection to an specific server, although it can be configured to connect to any server sent by the client as an argument.
+  * MCCP compression support (zlib)
+  * MXP protocol support built into the client
+  * MSDP protocol support
+  * GMCP / ATCP protocol support (JSON) with sample uses in multiple existing plugins
+  * 256-color support, including background colors
+  * Unicode font support and UTF-8 negotiation
+  * To avoid abuse, default installation only allows connection to an specific server, although it can be configured to connect to any server sent by the client as an argument.
 
 ## Installation
 
@@ -57,8 +53,7 @@ cert.pem -> /etc/letsencrypt/live/...somewhere.../cert.pem
 privkey.pem -> /etc/letsencrypt/live/...somewhere.../privkey.pem
 ```
 
-How to install the certificates is beyond the scope of this project, but you could use [Certbot](https://certbot.eff.org/about/). You can find installation instructions for every operating system there. 
-
+How to install the certificates is beyond the scope of this project, but you could use [Certbot](https://certbot.eff.org/pages/about). You can find installation instructions for every operating system there, or look for instructions for your specific OS in any search engine with something like `How to install certbot for let's encrypt in <your operating system>`.
 
 ## Configuration
 
@@ -80,5 +75,5 @@ In `wsproxy.js` you can change the following options:
 ```
 
 Probably you will only have to change:
- * `tn_host` with your hostname. `localhost` or `127.0.0.1` don't seem to work: [see conversation here](https://github.com/maldorne/mud-web-proxy/issues/5#issuecomment-866464161).
+ * `tn_host` with your hostname (Note that `localhost` or `127.0.0.1` don't seem to work: [see conversation here](https://github.com/maldorne/mud-web-proxy/issues/5#issuecomment-866464161), although it has not been tested in deep).
  * `tn_port` with the port where the mud is running.
