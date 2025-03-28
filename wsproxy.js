@@ -683,6 +683,8 @@ let srv = {
         ) {
           //s.ts.send(new Buffer([p.IAC, p.WILL, p.ECHO]));
           srv.log('IAC WILL ECHO <- IAC WONT ECHO');
+          // set a flag to avoid logging the next message (maybe passwords)
+          s.password_mode = true;
           s.echo_negotiated = 1;
         }
       }
@@ -908,7 +910,13 @@ let srv = {
 
   forward: function (s, d) {
     if (s.ts) {
-      if (s.debug) srv.log('forward: ' + d, s);
+      if (s.debug && !s.password_mode) {
+        srv.log('forward: ' + d, s);
+      }
+      // reset password mode after forwarding the message
+      if (s.password_mode) {
+        s.password_mode = false;
+      }
       s.ts.send(d);
     }
   },
