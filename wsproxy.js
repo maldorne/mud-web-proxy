@@ -29,7 +29,7 @@
     by the basic in-proxy chat system.
 */
 
-import { util as u } from 'util';
+import util from 'util';
 import net from 'net';
 // import http from 'http'; // Commented out as in original
 import https from 'https';
@@ -155,7 +155,7 @@ let srv = {
     //WILL_UTF8:    new Buffer([ 255, 250, 42, 2, "UTF-8", 255, 240 ])
   },
 
-  init: function () {
+  init: async function () {
     /* eslint no-unused-vars: 0 */
     let webserver;
     let wsServer;
@@ -164,7 +164,14 @@ let srv = {
       sockets: [],
     };
 
-    chatlog = require(__dirname + '/chat.json');
+    try {
+      // Load chat log asynchronously
+      chatlog = await loadChatLog();
+      srv.log('Chat log loaded successfully');
+    } catch (err) {
+      srv.log('Error loading chat log: ' + err);
+      chatlog = [];
+    }
 
     // let webserver = http.createServer(function(request, response) {
     //   response.writeHead(404);
@@ -427,7 +434,7 @@ let srv = {
       if (srv.debug) {
         let raw = [];
         for (let i = 0; i < data.length; i++)
-          raw.push(u.format('%d', data[i]));
+          raw.push(util.format('%d', data[i]));
         srv.log('write bin: ' + raw.toString(), s);
       }
 
@@ -733,7 +740,8 @@ let srv = {
 
     if (srv.debug) {
       let raw = [];
-      for (let i = 0; i < data.length; i++) raw.push(u.format('%d', data[i]));
+      for (let i = 0; i < data.length; i++)
+        raw.push(util.format('%d', data[i]));
       srv.log('raw bin: ' + raw, s);
       // srv.log('raw: ' + data, s);
     }
@@ -837,7 +845,7 @@ let srv = {
     if (!s) s = { req: { connection: { remoteAddress: '' } } };
     // eslint-disable-next-line no-console
     console.log(
-      u.format(
+      util.format(
         new Date().toISOString() + ' %s: %s',
         s.req.connection.remoteAddress,
         msg,
