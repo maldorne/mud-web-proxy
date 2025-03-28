@@ -213,18 +213,26 @@ let srv = {
     wsServer.on('connection', function connection(socket, req) {
       srv.log('(ws on connection) new connection');
       if (!socket.req) socket.req = req;
+
+      // Add compatibility methods for the WebSocket
+      socket.sendUTF = socket.send.bind(socket);
+      socket.terminate = socket.close.bind(socket);
+
       server.sockets.push(socket);
       srv.log('(ws on connection) connection count: ' + server.sockets.length);
 
       socket.on('message', function message(msg) {
         // if (msg.type === 'utf8') {
         // msg = msg.utf8Data;
-        if (!srv.parse(socket, msg)) srv.forward(socket, msg);
+        if (!srv.parse(socket, msg)) {
+          srv.forward(socket, msg);
+        }
         // }
         // else {
         //   srv.log('unrecognized msg type: ' + msg.type);
         // }
       });
+
       socket.on('close', () => {
         srv.log('Peer disconnected');
         srv.closeSocket(socket);
@@ -827,7 +835,8 @@ let srv = {
       let t = stringify(temp);
       t = this.chatCleanup(t);
 
-      s.sendUTF('portal.chatlog ' + t);
+      // s.sendUTF('portal.chatlog ' + t);
+      s.send('portal.chatlog ' + t);
       // fs.writeFileSync("./chat.json", stringify(chatlog));
       return;
     }
@@ -837,7 +846,8 @@ let srv = {
     req.msg = this.chatCleanup(req.msg);
 
     for (let i = 0; i < ss.length; i++) {
-      if (ss[i].chat) ss[i].sendUTF('portal.chat ' + stringify(req));
+      // if (ss[i].chat) ss[i].sendUTF('portal.chat ' + stringify(req));
+      if (ss[i].chat) ss[i].send('portal.chat ' + stringify(req));
     }
 
     fs.writeFileSync('./chat.json', stringify(chatlog));
