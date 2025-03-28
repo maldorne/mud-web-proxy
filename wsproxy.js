@@ -39,7 +39,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
 import { minify } from 'uglify-js';
-import { WebSocketServer as ws } from 'ws';
+import ws from 'ws';
 import iconv from 'iconv-lite';
 // iconv.extendNodeEncodings(); // Kept commented as in original
 
