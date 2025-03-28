@@ -910,13 +910,19 @@ let srv = {
 
   forward: function (s, d) {
     if (s.ts) {
-      if (s.debug && !s.password_mode) {
-        srv.log('forward: ' + d, s);
+      if (s.debug) {
+        if (s.password_mode) {
+          srv.log('forward: **** (omitted)', s);
+        } else {
+          srv.log('forward: ' + d, s);
+        }
       }
+
       // reset password mode after forwarding the message
       if (s.password_mode) {
         s.password_mode = false;
       }
+
       s.ts.send(d);
     }
   },
