@@ -1,8 +1,11 @@
 /*  
   Lightweight Websocket <-> Telnet Proxy
-  v1.3 - 2/27/2014
+  v1.3 - 2/27/2014 @plamzi
+  v2.0 - ?? @neverbot
+  v3.0 - March 2025 @neverbot
   
   Author: plamzi - plamzi@gmail.com 
+  Contributor: neverbot
   MIT license
   
   Supports client setting any host and port prior to connect.
@@ -26,26 +29,30 @@
     by the basic in-proxy chat system.
 */
 
-let u = require('util');
-let net = require('net');
-// let http = require('http');
-let https = require('https');
-let zlib = require('zlib');
-let fs = require('fs');
+import { util as u } from 'util';
+import net from 'net';
+// import http from 'http'; // Commented out as in original
+import https from 'https';
+import zlib from 'zlib';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-let ug = require('uglify-js');
-let ws = require('ws').Server;
-let iconv = require('iconv-lite');
-// iconv.extendNodeEncodings();
+import { minify } from 'uglify-js';
+import { WebSocketServer as ws } from 'ws';
+import iconv from 'iconv-lite';
+// iconv.extendNodeEncodings(); // Kept commented as in original
+
+// Get current file directory in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // if this is true, only allow connections to srv.tn_host, ignoring
 // the server sent as argument by the client
 const ONLY_ALLOW_DEFAULT_SERVER = true;
 const REPOSITORY_URL = 'https://github.com/maldorne/mud-web-proxy/';
 
-// let first = (typeof srv == 'undefined');
 let server = {};
-
 let chatlog;
 
 process.chdir(__dirname);
@@ -60,6 +67,16 @@ const stringify = function (A) {
     return v;
   });
   return val;
+};
+
+// Load chat log asynchronously
+const loadChatLog = async () => {
+  try {
+    const data = await fs.promises.readFile('./chat.json', 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    return [];
+  }
 };
 
 // const dump = function (o) {
@@ -738,7 +755,7 @@ let srv = {
 
   loadF: function (f) {
     try {
-      let fl = ug.minify(srv.path + '/' + f).code;
+      let fl = minify(srv.path + '/' + f).code;
       eval(fl + '');
       srv.log('dyn.reload: ' + f);
     } catch (err) {
@@ -879,29 +896,36 @@ let srv = {
   },
 };
 
-// if (first) {
+// Initialize async
+const init = async () => {
+  chatlog = await loadChatLog();
 
-chatlog = [];
+  process.stdin.resume();
 
-process.stdin.resume();
+  process
+    .on('SIGINT', () => {
+      srv.log('Got SIGINT.');
+      srv.die();
+    })
+    .on('SIGABRT', () => {
+      srv.log('Got SIGABRT.');
+      srv.die();
+    })
+    .on('SIGSEGV', () => {
+      srv.log('Got SIGSEGV.');
+      srv.die(true);
+    })
+    .on('SIGTERM', () => {
+      srv.log('Got SIGTERM.');
+      srv.die();
+    });
 
-process
-  .on('SIGINT', function () {
-    srv.log('Got SIGINT.');
-    srv.die();
-  })
-  .on('SIGABRT', function () {
-    srv.log('Got SIGABRT.');
-    srv.die();
-  })
-  .on('SIGSEGV', function () {
-    srv.log('Got SIGSEGV.');
-    srv.die(true);
-  })
-  .on('SIGTERM', function () {
-    srv.log('Got SIGTERM.');
-    srv.die();
-  });
+  srv.init();
+};
 
-srv.init();
-// }
+// Start the server
+init().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error('Failed to initialize:', err);
+  process.exit(1);
+});
