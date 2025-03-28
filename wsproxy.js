@@ -212,6 +212,16 @@ let srv = {
 
     wsServer.on('connection', function connection(socket, req) {
       srv.log('(ws on connection) new connection');
+      if (!srv.open) {
+        socket.terminate();
+        return;
+      }
+
+      if (!srv.originAllowed(req.headers.origin)) {
+        socket.terminate();
+        return;
+      }
+
       if (!socket.req) socket.req = req;
 
       // Add compatibility methods for the WebSocket
@@ -234,58 +244,26 @@ let srv = {
       });
 
       socket.on('close', () => {
-        srv.log('Peer disconnected');
+        srv.log(
+          new Date().toISOString() +
+            ' (ws) peer ' +
+            socket.req.connection.remoteAddress +
+            ' disconnected.',
+        );
         srv.closeSocket(socket);
       });
 
       socket.on('error', (error) => {
-        srv.log('WebSocket error: ' + error);
+        srv.log(
+          new Date().toISOString() +
+            ' (ws) peer ' +
+            socket.req.connection.remoteAddress +
+            ' error: ' +
+            error,
+        );
         srv.closeSocket(socket);
       });
     });
-    /*
-      .on('request', function (request) {
-        if (!srv.open || !srv.originAllowed(request.origin)) {
-          request.reject();
-          srv.log(
-            '(ws on request) connection from ' + request.origin + ' rejected'
-          );
-          return;
-        }
-
-        let s = request.accept(null, request.origin);
-        s.ttype = [];
-
-        srv.log('(ws on request) new connection');
-        server.sockets.push(s);
-
-        srv.log('(ws on request) connection count: ' + server.sockets.length);
-
-        s.on('message', function (msg) {
-          if (msg.type === 'utf8') {
-            msg = msg.utf8Data;
-            if (!srv.parse(s, msg)) srv.forward(s, msg);
-          } else {
-            srv.log('unrecognized msg type: ' + msg.type);
-          }
-        })
-          .on('close', function (reasonCode, description) {
-            srv.log(
-              new Date() + '(ws) peer ' + s.remoteAddress + ' disconnected.'
-            );
-            srv.closeSocket(s);
-          })
-          .on('error', function (err) {
-            srv.log(
-              new Date() + '(ws) peer ' + s.remoteAddress + ' error: ' + err
-            );
-            //srv.closeSocket(s);
-          });
-      })
-      .on('error', function (err) {
-        srv.log(err);
-      });
-      */
 
     fs.watch(srv.path + '/wsproxy.js', function (e, f) {
       if (srv['update-' + f]) clearTimeout(srv['update-' + f]);
