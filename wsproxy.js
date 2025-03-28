@@ -73,8 +73,11 @@ const stringify = function (A) {
 const loadChatLog = async () => {
   try {
     const data = await fs.promises.readFile('./chat.json', 'utf8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    // Ensure we always return an array
+    return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
+    srv.log('Chat log error: ' + err);
     return [];
   }
 };
@@ -791,21 +794,27 @@ let srv = {
 
     let ss = server.sockets;
 
-    if (!chatlog) chatlog = [];
+    // Ensure chatlog is always an array
+    if (!Array.isArray(chatlog)) {
+      chatlog = [];
+    }
 
     if (req.channel && req.channel == 'op') {
-      //chatlog = chatlog.filter(function(l) { return (l[1].channel == 'status')?0:1 });
-      let temp = chatlog.concat().slice(-300),
-        users = [];
+      // chatlog = chatlog.filter(function(l) { return (l[1].channel == 'status')?0:1 });
+      // Create a copy of the last 300 messages
+      const temp = Array.from(chatlog).slice(-300);
+      const users = [];
 
       for (let i = 0; i < ss.length; i++) {
         if (!ss[i].ts && ss[i].name) continue;
 
         let u;
-        if (ss[i].ts)
-          //let u = '\x1b<span style="color: #01c8d4"\x1b>' + (ss[i].name||'Guest') + '\x1b</span\x1b>@'+ss[i].host;
+        if (ss[i].ts) {
+          // let u = '\x1b<span style="color: #01c8d4"\x1b>' + (ss[i].name||'Guest') + '\x1b</span\x1b>@'+ss[i].host;
           u = (ss[i].name || 'Guest') + '@' + ss[i].host;
-        else u = (ss[i].name || 'Guest') + '@chat';
+        } else {
+          u = (ss[i].name || 'Guest') + '@chat';
+        }
 
         if (users.indexOf(u) == -1) users.push(u);
       }
@@ -814,11 +823,12 @@ let srv = {
         new Date(),
         { channel: 'status', name: 'online:', msg: users.join(', ') },
       ]);
+
       let t = stringify(temp);
       t = this.chatCleanup(t);
 
       s.sendUTF('portal.chatlog ' + t);
-      //fs.writeFileSync("./chat.json", stringify(chatlog));
+      // fs.writeFileSync("./chat.json", stringify(chatlog));
       return;
     }
 
