@@ -199,12 +199,15 @@ let srv = {
       srv.log('(ws) server listening: port ' + srv.ws_port);
     });
 
+    // Fix: Create WebSocketServer correctly
     wsServer = new ws({
       server: webserver,
       // httpServer: webserver,
       // autoAcceptConnections: false,
       // keepalive: true
-    }).on('connection', function connection(socket, req) {
+    });
+
+    wsServer.on('connection', function connection(socket, req) {
       srv.log('(ws on connection) new connection');
       if (!socket.req) socket.req = req;
       server.sockets.push(socket);
@@ -218,6 +221,15 @@ let srv = {
         // else {
         //   srv.log('unrecognized msg type: ' + msg.type);
         // }
+      });
+      socket.on('close', () => {
+        srv.log('Peer disconnected');
+        srv.closeSocket(socket);
+      });
+
+      socket.on('error', (error) => {
+        srv.log('WebSocket error: ' + error);
+        srv.closeSocket(socket);
       });
     });
     /*
