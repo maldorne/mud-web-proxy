@@ -200,7 +200,7 @@ let srv = {
     });
 
     // Fix: Create WebSocketServer correctly
-    wsServer = new ws({
+    wsServer = new ws.Server({
       server: webserver,
       // httpServer: webserver,
       // autoAcceptConnections: false,
