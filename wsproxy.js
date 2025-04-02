@@ -40,7 +40,6 @@ import { dirname } from 'path';
 
 import { minify } from 'uglify-js';
 import ws from 'ws';
-import { WebSocketServer } from 'ws';
 import iconv from 'iconv-lite';
 // iconv.extendNodeEncodings(); // Kept commented as in original
 
@@ -211,6 +210,9 @@ let srv = {
     // Create WebSocket server based on Node.js version
     try {
       if (majorVersion >= 16) {
+        // Dynamic import with destructuring
+        const { WebSocketServer } = await import('ws');
+
         // Modern Node.js version (16+)
         wsServer = new WebSocketServer({ server: webserver });
       } else {
