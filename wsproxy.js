@@ -40,6 +40,7 @@ import { dirname } from 'path';
 
 import { minify } from 'uglify-js';
 import ws from 'ws';
+import { WebSocketServer } from 'ws';
 import iconv from 'iconv-lite';
 // iconv.extendNodeEncodings(); // Kept commented as in original
 
@@ -159,9 +160,14 @@ let srv = {
   },
 
   init: async function () {
-    /* eslint no-unused-vars: 0 */
     let webserver;
     let wsServer;
+
+    // Get Node.js version
+    const nodeVersion = process.version;
+    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0], 10);
+
+    srv.log('Using node version ' + majorVersion);
 
     server = {
       sockets: [],
@@ -202,13 +208,21 @@ let srv = {
       srv.log('(ws) server listening: port ' + srv.ws_port);
     });
 
-    // Fix: Create WebSocketServer correctly
-    wsServer = new ws.Server({
-      server: webserver,
-      // httpServer: webserver,
-      // autoAcceptConnections: false,
-      // keepalive: true
-    });
+    // Create WebSocket server based on Node.js version
+    try {
+      if (majorVersion >= 16) {
+        // Modern Node.js version (16+)
+        wsServer = new WebSocketServer({ server: webserver });
+      } else {
+        // Legacy Node.js version (14 and below)
+        wsServer = new ws({ server: webserver });
+      }
+
+      srv.log(`WebSocket server initialized (Node.js ${process.version})`);
+    } catch (err) {
+      srv.log('Error creating WebSocket server: ' + err);
+      process.exit(1);
+    }
 
     wsServer.on('connection', function connection(socket, req) {
       srv.log('(ws on connection) new connection');
