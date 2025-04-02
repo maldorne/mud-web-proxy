@@ -217,7 +217,7 @@ let srv = {
         wsServer = new WebSocketServer({ server: webserver });
       } else {
         // Legacy Node.js version (14 and below)
-        wsServer = new ws({ server: webserver });
+        wsServer = new ws.Server({ server: webserver });
       }
 
       srv.log(`WebSocket server initialized (Node.js ${process.version})`);
