@@ -1,0 +1,12 @@
+node_modules
+dist
+legacy
+test
+.git
+*.md
+docker-compose*.yml
+.prettierrc.json
+eslint.config.js
+chat.json
+cert.pem
+privkey.pem

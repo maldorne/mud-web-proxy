@@ -1,0 +1,16 @@
+services:
+  proxy:
+    build: .
+    ports:
+      - "6200:6200"
+    environment:
+      WS_PORT: "6200"
+      ENABLE_LEGACY_ROUTING: "true"
+      TLS_ENABLED: "false"
+      DEFAULT_HOST: "muds.maldorne.org"
+      DEFAULT_PORT: "5010"
+      COMPRESS: "true"
+      DEBUG: "true"
+      ALLOWED_ORIGINS: "*"
+      MAX_CONNECTIONS: "100"
+      LOG_LEVEL: "debug"
