@@ -16,6 +16,19 @@ const COLORS: Record<LogLevel, string> = {
 
 const RESET = '\x1b[0m';
 
+/**
+ * Strip ANSI escape sequences and control characters from log messages
+ * to prevent log injection attacks.
+ */
+function sanitize(str: string): string {
+  /* eslint-disable no-control-regex */
+  return str
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')
+    .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+    .replace(/\r?\n/g, ' ');
+  /* eslint-enable no-control-regex */
+}
+
 class Logger {
   private level: number;
   private json: boolean;
@@ -26,9 +39,11 @@ class Logger {
     this.json = process.env.NODE_ENV === 'production';
   }
 
-  private log(level: LogLevel, msg: string, context?: string): void {
+  private log(level: LogLevel, rawMsg: string, rawContext?: string): void {
     if (LEVELS[level] < this.level) return;
 
+    const msg = sanitize(rawMsg);
+    const context = rawContext ? sanitize(rawContext) : undefined;
     const timestamp = new Date().toISOString();
 
     if (this.json) {

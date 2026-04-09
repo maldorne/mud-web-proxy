@@ -12,6 +12,7 @@ import { Router } from './router.js';
 import { TelnetNegotiator } from './telnet/negotiator.js';
 import { logger } from './logger.js';
 import { metrics } from './metrics.js';
+import { clientMessageSchema } from './validation.js';
 
 export class Connection implements ConnectionState {
   readonly id: string;
@@ -40,6 +41,7 @@ export class Connection implements ConnectionState {
   private lastRoute: MudRoute | null = null;
   private lastConnectMsg: ClientMessage | null = null;
   private reconnectCount = 0;
+  private tcpConnected = false;
 
   constructor(
     ws: WebSocket,
@@ -117,16 +119,23 @@ export class Connection implements ConnectionState {
       return;
     }
 
-    let msg: ClientMessage;
+    let parsed: unknown;
     try {
-      msg = JSON.parse(str) as ClientMessage;
+      parsed = JSON.parse(str);
     } catch {
+      logger.warn('Invalid JSON from client', this.remoteAddress);
+      return;
+    }
+
+    const result = clientMessageSchema.safeParse(parsed);
+    if (!result.success) {
       logger.warn(
-        `Invalid JSON from client: ${str.substring(0, 100)}`,
+        `Invalid client message: ${result.error.issues.map((i) => i.message).join(', ')}`,
         this.remoteAddress,
       );
       return;
     }
+    const msg: ClientMessage = result.data;
 
     if (msg.host) {
       logger.debug(`Target host set to ${msg.host}`, this.remoteAddress);
@@ -211,6 +220,7 @@ export class Connection implements ConnectionState {
         timeout: this.config.connectTimeoutMs,
       },
       () => {
+        this.tcpConnected = true;
         logger.info(
           `TCP connected to ${route.host}:${route.port}`,
           this.remoteAddress,
@@ -235,16 +245,19 @@ export class Connection implements ConnectionState {
 
     this.tcp.on('close', () => {
       logger.info('TCP socket closed', this.remoteAddress);
-      if (!this.closed) {
+      if (!this.closed && this.tcpConnected) {
         this.attemptReconnect();
+      } else if (!this.closed) {
+        setTimeout(() => this.close(), 500);
       }
     });
 
     this.tcp.on('error', (err: Error) => {
       metrics.inc('proxy_tcp_errors_total');
       logger.error(`TCP error: ${err.message}`, this.remoteAddress);
-      if (!this.closed) {
-        this.attemptReconnect();
+      if (!this.tcpConnected) {
+        this.sendMessage('Error: could not connect to MUD server.\r\n');
+        setTimeout(() => this.close(), 500);
       }
     });
   }

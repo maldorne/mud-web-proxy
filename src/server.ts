@@ -77,7 +77,20 @@ export class ProxyServer {
     return http.createServer(handler);
   }
 
+  private setSecurityHeaders(res: ServerResponse): void {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '0');
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains',
+    );
+    res.setHeader('Cache-Control', 'no-store');
+  }
+
   private handleHttpRequest(req: IncomingMessage, res: ServerResponse): void {
+    this.setSecurityHeaders(res);
+
     if (req.url === '/health') {
       const status = this.accepting ? 200 : 503;
       res.writeHead(status, { 'Content-Type': 'application/json' });
