@@ -1,0 +1,8 @@
+{
+  "check-coverage": true,
+  "statements": 70,
+  "branches": 70,
+  "functions": 70,
+  "lines": 70,
+  "exclude": ["node_modules", "coverage", "test"]
+}

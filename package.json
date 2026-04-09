@@ -19,7 +19,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "test": "mocha --require tsx 'test/**/*.test.ts'",
+    "test": "NODE_ENV=test npx c8 mocha --require tsx 'test/**/*.test.ts'",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix"
   },
@@ -38,6 +38,7 @@
     "@types/node": "^22.15.3",
     "@types/sinon": "^17.0.4",
     "@types/ws": "^8.18.1",
+    "c8": "^11.0.0",
     "chai": "^5.2.0",
     "eslint": "^9.23.0",
     "eslint-config-prettier": "^10.1.1",
