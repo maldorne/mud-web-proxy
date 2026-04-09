@@ -183,6 +183,15 @@ export class Connection implements ConnectionState {
         logger.error(`MSDP send error: ${ex}`, this.remoteAddress);
       }
     }
+
+    if (msg.gmcp && this.tcp) {
+      try {
+        logger.debug(`GMCP send: ${msg.gmcp}`, this.remoteAddress);
+        this.negotiator.gmcp.sendGMCP(this, msg.gmcp);
+      } catch (ex) {
+        logger.error(`GMCP send error: ${ex}`, this.remoteAddress);
+      }
+    }
   }
 
   private connectToMud(msg: ClientMessage): void {
