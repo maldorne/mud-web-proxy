@@ -9,6 +9,7 @@ import { Connection } from './connection.js';
 import { Chat } from './chat.js';
 import { logger } from './logger.js';
 import { metrics } from './metrics.js';
+import { RateLimiter } from './rate-limiter.js';
 
 export class ProxyServer {
   private config: ProxyConfig;
@@ -17,6 +18,7 @@ export class ProxyServer {
   private wsServer: WebSocketServer;
   private connections: Set<Connection> = new Set();
   private chat: Chat;
+  private rateLimiter: RateLimiter;
   private accepting = true;
 
   constructor(config: ProxyConfig) {
@@ -27,6 +29,10 @@ export class ProxyServer {
     this.httpServer = this.createHttpServer();
     this.wsServer = new WebSocketServer({ server: this.httpServer });
     this.chat = new Chat(config, () => Array.from(this.connections));
+    this.rateLimiter = new RateLimiter(
+      config.rateLimitPerIp,
+      config.rateLimitWindowMs,
+    );
 
     this.setupWebSocketServer();
 
@@ -121,6 +127,15 @@ export class ProxyServer {
         return;
       }
 
+      // Check rate limit
+      if (!this.rateLimiter.allow(remoteAddress)) {
+        logger.warn('Rate limited', remoteAddress);
+        metrics.inc('proxy_connections_rejected_total');
+        metrics.inc('proxy_rate_limited_total');
+        ws.close();
+        return;
+      }
+
       // Check max connections
       if (this.connections.size >= this.config.maxConnections) {
         logger.warn('Max connections reached, rejecting', remoteAddress);
@@ -195,6 +210,8 @@ export class ProxyServer {
     for (const conn of this.connections) {
       conn.sendMessage('Proxy server is shutting down...\r\n');
     }
+
+    this.rateLimiter.destroy();
 
     // Save chat log
     if (this.config.chat.enabled) {

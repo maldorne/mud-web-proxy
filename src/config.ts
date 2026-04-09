@@ -57,6 +57,8 @@ export function loadConfig(): ProxyConfig {
     idleTimeoutMs: parseInt(env.IDLE_TIMEOUT_MS, 30 * 60 * 1000),
     pingIntervalMs: parseInt(env.PING_INTERVAL_MS, 30_000),
     pongTimeoutMs: parseInt(env.PONG_TIMEOUT_MS, 10_000),
+    rateLimitPerIp: parseInt(env.RATE_LIMIT_PER_IP, 10),
+    rateLimitWindowMs: parseInt(env.RATE_LIMIT_WINDOW_MS, 60_000),
     enableLegacyRouting: parseBoolean(env.ENABLE_LEGACY_ROUTING, true),
     routes: parseRoutes(env.MUD_ROUTES),
     tls: {
