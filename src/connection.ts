@@ -11,6 +11,7 @@ import type {
 import { Router } from './router.js';
 import { TelnetNegotiator } from './telnet/negotiator.js';
 import { logger } from './logger.js';
+import { metrics } from './metrics.js';
 
 export class Connection implements ConnectionState {
   readonly id: string;
@@ -102,6 +103,9 @@ export class Connection implements ConnectionState {
   }
 
   private handleClientMessage(raw: Buffer | string): void {
+    const buf = typeof raw === 'string' ? Buffer.from(raw) : raw;
+    metrics.inc('proxy_messages_from_client_total');
+    metrics.inc('proxy_bytes_from_client_total', buf.length);
     const str = raw.toString();
 
     // Only parse JSON messages (starting with '{')
@@ -190,6 +194,7 @@ export class Connection implements ConnectionState {
 
     this.compressed = false;
 
+    metrics.inc('proxy_tcp_connections_total');
     logger.info(
       `Connecting to ${route.host}:${route.port} for ${this.remoteAddress}`,
     );
@@ -210,11 +215,14 @@ export class Connection implements ConnectionState {
     );
 
     this.tcp.on('data', (data: Buffer) => {
+      metrics.inc('proxy_messages_from_mud_total');
+      metrics.inc('proxy_bytes_from_mud_total', data.length);
       this.resetIdleTimer();
       this.handleMudData(data);
     });
 
     this.tcp.on('timeout', () => {
+      metrics.inc('proxy_tcp_errors_total');
       logger.warn('TCP connect timeout', this.remoteAddress);
       this.sendMessage('Timeout: server is not responding.\r\n');
       setTimeout(() => this.close(), 500);
@@ -226,6 +234,7 @@ export class Connection implements ConnectionState {
     });
 
     this.tcp.on('error', (err: Error) => {
+      metrics.inc('proxy_tcp_errors_total');
       logger.error(`TCP error: ${err.message}`, this.remoteAddress);
       this.sendMessage('Error: could not connect to MUD server.\r\n');
       setTimeout(() => this.close(), 500);

@@ -129,6 +129,18 @@ describe('E2E: proxy', () => {
     expect(body).to.have.property('connections');
   });
 
+  it('should expose Prometheus metrics on /metrics', async () => {
+    const res = await fetch(`http://127.0.0.1:${proxyPort}/metrics`);
+    expect(res.status).to.equal(200);
+
+    const text = await res.text();
+    expect(text).to.include('proxy_connections_total');
+    expect(text).to.include('proxy_websocket_connections_active');
+    expect(text).to.include('proxy_tcp_connections_active');
+    expect(text).to.include('# TYPE');
+    expect(text).to.include('# HELP');
+  });
+
   it('should return 404 on unknown paths', async () => {
     const res = await fetch(`http://127.0.0.1:${proxyPort}/unknown`);
     expect(res.status).to.equal(404);

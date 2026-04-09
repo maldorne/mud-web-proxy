@@ -8,6 +8,7 @@ import { Router } from './router.js';
 import { Connection } from './connection.js';
 import { Chat } from './chat.js';
 import { logger } from './logger.js';
+import { metrics } from './metrics.js';
 
 export class ProxyServer {
   private config: ProxyConfig;
@@ -28,6 +29,18 @@ export class ProxyServer {
     this.chat = new Chat(config, () => Array.from(this.connections));
 
     this.setupWebSocketServer();
+
+    // Register gauges
+    metrics.gauge(
+      'proxy_websocket_connections_active',
+      'Current active WebSocket connections',
+      () => this.connections.size,
+    );
+    metrics.gauge(
+      'proxy_tcp_connections_active',
+      'Current active TCP connections to MUD servers',
+      () => Array.from(this.connections).filter((c) => c.tcp !== null).length,
+    );
   }
 
   private createHttpServer(): http.Server | https.Server {
@@ -76,6 +89,14 @@ export class ProxyServer {
       return;
     }
 
+    if (req.url === '/metrics') {
+      res.writeHead(200, {
+        'Content-Type': 'text/plain; version=0.0.4; charset=utf-8',
+      });
+      res.end(metrics.serialize());
+      return;
+    }
+
     res.writeHead(404);
     res.end();
   }
@@ -95,6 +116,7 @@ export class ProxyServer {
       // Check origin
       if (!this.isOriginAllowed(req.headers.origin)) {
         logger.warn(`Rejected origin: ${req.headers.origin}`, remoteAddress);
+        metrics.inc('proxy_connections_rejected_total');
         ws.close();
         return;
       }
@@ -102,11 +124,13 @@ export class ProxyServer {
       // Check max connections
       if (this.connections.size >= this.config.maxConnections) {
         logger.warn('Max connections reached, rejecting', remoteAddress);
+        metrics.inc('proxy_connections_rejected_total');
         ws.send(JSON.stringify({ error: 'Server at capacity' }));
         ws.close();
         return;
       }
 
+      metrics.inc('proxy_connections_total');
       logger.info(
         `New WebSocket connection (total: ${this.connections.size + 1})`,
         remoteAddress,
