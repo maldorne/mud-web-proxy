@@ -13,7 +13,11 @@ export class MsdpHandler implements TelnetOptionHandler {
       connection.writeTcp(T.DO_MSDP);
       logger.debug('IAC WILL MSDP <- IAC DO MSDP', connection.remoteAddress);
 
-      this.sendPair(connection, 'CLIENT_ID', connection.client ?? 'maldorne.org');
+      this.sendPair(
+        connection,
+        'CLIENT_ID',
+        connection.client ?? 'maldorne.org',
+      );
       this.sendPair(connection, 'CLIENT_VERSION', '1.0');
       this.sendPair(connection, 'CLIENT_IP', connection.remoteAddress);
       this.sendPair(connection, 'XTERM_256_COLORS', '1');

@@ -2,7 +2,12 @@ import net from 'net';
 import zlib from 'zlib';
 import iconv from 'iconv-lite';
 import { WebSocket } from 'ws';
-import type { ProxyConfig, ClientMessage, ConnectionState, MudRoute } from './types.js';
+import type {
+  ProxyConfig,
+  ClientMessage,
+  ConnectionState,
+  MudRoute,
+} from './types.js';
 import { Router } from './router.js';
 import { TelnetNegotiator } from './telnet/negotiator.js';
 import { logger } from './logger.js';
@@ -109,7 +114,10 @@ export class Connection implements ConnectionState {
     try {
       msg = JSON.parse(str) as ClientMessage;
     } catch {
-      logger.warn(`Invalid JSON from client: ${str.substring(0, 100)}`, this.remoteAddress);
+      logger.warn(
+        `Invalid JSON from client: ${str.substring(0, 100)}`,
+        this.remoteAddress,
+      );
       return;
     }
 
@@ -142,7 +150,10 @@ export class Connection implements ConnectionState {
 
     if (msg.bin && this.tcp) {
       try {
-        logger.debug(`Binary send: ${JSON.stringify(msg.bin)}`, this.remoteAddress);
+        logger.debug(
+          `Binary send: ${JSON.stringify(msg.bin)}`,
+          this.remoteAddress,
+        );
         this.tcp.write(Buffer.from(msg.bin));
       } catch (ex) {
         logger.error(`Binary send error: ${ex}`, this.remoteAddress);
@@ -184,7 +195,11 @@ export class Connection implements ConnectionState {
     );
 
     this.tcp = net.createConnection(
-      { host: route.host, port: route.port, timeout: this.config.connectTimeoutMs },
+      {
+        host: route.host,
+        port: route.port,
+        timeout: this.config.connectTimeoutMs,
+      },
       () => {
         logger.info(
           `TCP connected to ${route.host}:${route.port}`,
@@ -334,7 +349,10 @@ export class Connection implements ConnectionState {
     }
 
     // Close WebSocket
-    if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+    if (
+      this.ws.readyState === WebSocket.OPEN ||
+      this.ws.readyState === WebSocket.CONNECTING
+    ) {
       this.ws.close();
     }
 

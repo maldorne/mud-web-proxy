@@ -1,4 +1,8 @@
-import type { TelnetOptionHandler, ConnectionState, ProxyConfig } from '../types.js';
+import type {
+  TelnetOptionHandler,
+  ConnectionState,
+  ProxyConfig,
+} from '../types.js';
 import * as T from './constants.js';
 import { logger } from '../logger.js';
 import { MccpHandler } from './handlers/mccp.js';
@@ -70,7 +74,10 @@ export class TelnetNegotiator {
 
       // Three-byte IAC commands: IAC WILL/WONT/DO/DONT <option>
       if (
-        (verb === T.WILL || verb === T.WONT || verb === T.DO || verb === T.DONT) &&
+        (verb === T.WILL ||
+          verb === T.WONT ||
+          verb === T.DO ||
+          verb === T.DONT) &&
         i + 2 < data.length
       ) {
         const option = data[i + 2];

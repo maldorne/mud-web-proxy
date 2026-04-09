@@ -1,7 +1,10 @@
 import type { ProxyConfig, MudRoute } from './types.js';
 import { logger } from './logger.js';
 
-function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
+function parseBoolean(
+  value: string | undefined,
+  defaultValue: boolean,
+): boolean {
   if (value === undefined) return defaultValue;
   return value === 'true' || value === '1';
 }
@@ -21,10 +24,7 @@ function parseRoutes(value: string | undefined): Record<string, MudRoute> {
     >;
     const routes: Record<string, MudRoute> = {};
     for (const [key, route] of Object.entries(parsed)) {
-      if (
-        typeof route.host === 'string' &&
-        typeof route.port === 'number'
-      ) {
+      if (typeof route.host === 'string' && typeof route.port === 'number') {
         routes[key] = { host: route.host, port: route.port };
       } else {
         logger.warn(`Invalid route for "${key}", skipping`);

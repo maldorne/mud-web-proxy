@@ -15,10 +15,14 @@ export class Router {
 
     const routeCount = Object.keys(this.routes).length;
     if (routeCount > 0) {
-      logger.info(`Loaded ${routeCount} MUD route(s): ${Object.keys(this.routes).join(', ')}`);
+      logger.info(
+        `Loaded ${routeCount} MUD route(s): ${Object.keys(this.routes).join(', ')}`,
+      );
     }
     if (this.legacyEnabled) {
-      logger.info(`Legacy routing enabled (default: ${this.defaultHost}:${this.defaultPort})`);
+      logger.info(
+        `Legacy routing enabled (default: ${this.defaultHost}:${this.defaultPort})`,
+      );
     }
   }
 
@@ -31,7 +35,9 @@ export class Router {
           `Unknown MUD "${msg.mud}". Available: ${Object.keys(this.routes).join(', ') || 'none'}`,
         );
       }
-      logger.debug(`Route resolved: ${msg.mud} -> ${route.host}:${route.port}`);
+      logger.debug(
+        `Route resolved: ${msg.mud} -> ${route.host}:${route.port}`,
+      );
       return route;
     }
 

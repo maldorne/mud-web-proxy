@@ -37,10 +37,7 @@ export class Chat {
   private connections: () => Connection[];
   private chatFilePath = './chat.json';
 
-  constructor(
-    config: ProxyConfig,
-    getConnections: () => Connection[],
-  ) {
+  constructor(config: ProxyConfig, getConnections: () => Connection[]) {
     this.maxSize = config.chat.maxLogSize;
     this.connections = getConnections;
     this.loadFromDisk();

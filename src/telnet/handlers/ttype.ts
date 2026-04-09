@@ -10,15 +10,25 @@ export class TtypeHandler implements TelnetOptionHandler {
 
   handleIAC(verb: number, connection: ConnectionState): void {
     if (verb === T.DO && connection.ttype.length > 0) {
-      logger.debug('IAC DO TTYPE <- sending first TTYPE', connection.remoteAddress);
+      logger.debug(
+        'IAC DO TTYPE <- sending first TTYPE',
+        connection.remoteAddress,
+      );
       this.sendTTYPE(connection, connection.ttype.shift()!);
     }
   }
 
   handleSB(data: Buffer, connection: ConnectionState): void {
     // IAC SB TTYPE REQUEST -> send next TTYPE
-    if (data.length >= 1 && data[0] === T.REQUEST && connection.ttype.length > 0) {
-      logger.debug('IAC SB TTYPE REQUEST <- sending next TTYPE', connection.remoteAddress);
+    if (
+      data.length >= 1 &&
+      data[0] === T.REQUEST &&
+      connection.ttype.length > 0
+    ) {
+      logger.debug(
+        'IAC SB TTYPE REQUEST <- sending next TTYPE',
+        connection.remoteAddress,
+      );
       this.sendTTYPE(connection, connection.ttype.shift()!);
     }
 

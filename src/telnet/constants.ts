@@ -44,9 +44,30 @@ export const WILL_NEW = Buffer.from([IAC, WILL, NEW_ENVIRON]);
 export const WONT_NAWS = Buffer.from([IAC, WONT, NAWS]);
 
 export const ACCEPT_UTF8 = Buffer.from([
-  IAC, SB, ACCEPTED, 34, 85, 84, 70, 45, 56, 34, IAC, SE,
+  IAC,
+  SB,
+  ACCEPTED,
+  34,
+  85,
+  84,
+  70,
+  45,
+  56,
+  34,
+  IAC,
+  SE,
 ]);
 
 export const WILL_UTF8 = Buffer.from([
-  IAC, SB, CHARSET, ACCEPTED, 85, 84, 70, 45, 56, IAC, SE,
+  IAC,
+  SB,
+  CHARSET,
+  ACCEPTED,
+  85,
+  84,
+  70,
+  45,
+  56,
+  IAC,
+  SE,
 ]);

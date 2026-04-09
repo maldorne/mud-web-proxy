@@ -40,7 +40,9 @@ export class ProxyServer {
       const keyPath = this.config.tls.keyPath!;
 
       if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
-        logger.error('TLS certificates not found. Set TLS_ENABLED=false or provide valid paths.');
+        logger.error(
+          'TLS certificates not found. Set TLS_ENABLED=false or provide valid paths.',
+        );
         process.exit(1);
       }
 
@@ -66,7 +68,8 @@ export class ProxyServer {
           uptime: process.uptime(),
           connections: {
             websocket: this.connections.size,
-            telnet: Array.from(this.connections).filter((c) => c.tcp !== null).length,
+            telnet: Array.from(this.connections).filter((c) => c.tcp !== null)
+              .length,
           },
         }),
       );
@@ -122,7 +125,10 @@ export class ProxyServer {
       // Listen for chat events from this connection
       ws.on('chat', (conn: Connection, msg: unknown) => {
         if (this.config.chat.enabled) {
-          this.chat.handleChat(conn, msg as import('./types.js').ClientMessage);
+          this.chat.handleChat(
+            conn,
+            msg as import('./types.js').ClientMessage,
+          );
         }
       });
     });
@@ -151,7 +157,9 @@ export class ProxyServer {
       logger.info(
         `Proxy server listening on ${protocol}://0.0.0.0:${this.config.wsPort}`,
       );
-      logger.info(`Health check at http://0.0.0.0:${this.config.wsPort}/health`);
+      logger.info(
+        `Health check at http://0.0.0.0:${this.config.wsPort}/health`,
+      );
     });
   }
 

@@ -11,7 +11,10 @@ export class CharsetHandler implements TelnetOptionHandler {
   handleIAC(verb: number, connection: ConnectionState): void {
     if (verb === T.DO) {
       connection.writeTcp(T.WILL_CHARSET);
-      logger.debug('IAC DO CHARSET <- IAC WILL CHARSET', connection.remoteAddress);
+      logger.debug(
+        'IAC DO CHARSET <- IAC WILL CHARSET',
+        connection.remoteAddress,
+      );
     }
   }
 
