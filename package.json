@@ -45,12 +45,12 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "globals": "^17.4.0",
-    "mocha": "^11.5.0",
+    "mocha": "^11.7.5",
     "prettier": "^3.8.1",
     "sinon": "^21.1.0",
-    "tsx": "^4.19.4",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2",
-    "typescript-eslint": "^8.32.1"
+    "typescript-eslint": "^8.58.1"
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",
