@@ -18,6 +18,8 @@ export interface ProxyConfig {
   idleTimeoutMs: number;
   pingIntervalMs: number;
   pongTimeoutMs: number;
+  reconnectAttempts: number;
+  reconnectDelayMs: number;
   rateLimitPerIp: number;
   rateLimitWindowMs: number;
   enableLegacyRouting: boolean;
