@@ -422,15 +422,10 @@ export class Connection implements ConnectionState {
       logger.debug(`write bin: ${raw.join(',')}`, this.remoteAddress);
     }
 
-    // Encode to the MUD's encoding for non-UTF8 connections
-    const isUtf8 = this.utf8 || this.encoding === 'utf8';
-    try {
-      const encoded = isUtf8 ? buf : iconv.encode(buf.toString(), this.encoding);
-      this.tcp.write(encoded);
-    } catch (ex) {
-      logger.error(`Encoding error: ${ex}`, this.remoteAddress);
-      this.tcp.write(buf);
-    }
+    // Raw protocol write — no encoding conversion.
+    // Used by telnet handlers for IAC sequences (binary data).
+    // Text from the client goes through forwardToMud() which handles encoding.
+    this.tcp.write(buf);
   }
 
   private forwardToMud(data: Buffer | string): void {
