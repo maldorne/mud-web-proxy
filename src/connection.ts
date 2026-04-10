@@ -241,6 +241,9 @@ export class Connection implements ConnectionState {
       },
       () => {
         this.tcpConnected = true;
+        // Disable the connect timeout now that the TCP connection is established.
+        // The idle timer (WebSocket-level) handles inactivity from here on.
+        this.tcp!.setTimeout(0);
         logger.info(
           `TCP connected to ${route.host}:${route.port}`,
           this.remoteAddress,
@@ -335,6 +338,7 @@ export class Connection implements ConnectionState {
           timeout: this.config.connectTimeoutMs,
         },
         () => {
+          this.tcp!.setTimeout(0);
           logger.info(
             `Reconnected to ${route.host}:${route.port}`,
             this.remoteAddress,
