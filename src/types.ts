@@ -23,6 +23,7 @@ export interface ProxyConfig {
   rateLimitPerIp: number;
   rateLimitWindowMs: number;
   enableLegacyRouting: boolean;
+  allowedHosts: string[];
   routes: Record<string, MudRoute>;
   tls: {
     enabled: boolean;

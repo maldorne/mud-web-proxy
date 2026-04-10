@@ -6,12 +6,14 @@ export class Router {
   private defaultHost: string;
   private defaultPort: number;
   private legacyEnabled: boolean;
+  private allowedHosts: string[];
 
   constructor(config: ProxyConfig) {
     this.routes = config.routes;
     this.defaultHost = config.defaultHost;
     this.defaultPort = config.defaultPort;
     this.legacyEnabled = config.enableLegacyRouting;
+    this.allowedHosts = config.allowedHosts;
 
     const routeCount = Object.keys(this.routes).length;
     if (routeCount > 0) {
@@ -22,6 +24,11 @@ export class Router {
     if (this.legacyEnabled) {
       logger.info(
         `Legacy routing enabled (default: ${this.defaultHost}:${this.defaultPort})`,
+      );
+    }
+    if (this.allowedHosts.length > 0) {
+      logger.info(
+        `Allowed hosts: ${this.allowedHosts.join(', ')}`,
       );
     }
   }
@@ -45,6 +52,13 @@ export class Router {
     if (this.legacyEnabled) {
       const host = msg.host ?? this.defaultHost;
       const port = msg.port ?? this.defaultPort;
+
+      if (this.allowedHosts.length > 0 && !this.allowedHosts.includes(host)) {
+        throw new Error(
+          `Host "${host}" is not allowed. Allowed hosts: ${this.allowedHosts.join(', ')}`,
+        );
+      }
+
       logger.debug(`Legacy route: ${host}:${port}`);
       return { host, port };
     }

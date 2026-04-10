@@ -62,6 +62,9 @@ export function loadConfig(): ProxyConfig {
     rateLimitPerIp: parseInt(env.RATE_LIMIT_PER_IP, 10),
     rateLimitWindowMs: parseInt(env.RATE_LIMIT_WINDOW_MS, 60_000),
     enableLegacyRouting: parseBoolean(env.ENABLE_LEGACY_ROUTING, true),
+    allowedHosts: env.ALLOWED_HOSTS
+      ? env.ALLOWED_HOSTS.split(',').map((s) => s.trim())
+      : [],
     routes: parseRoutes(env.MUD_ROUTES),
     tls: {
       enabled: parseBoolean(env.TLS_ENABLED, false),
