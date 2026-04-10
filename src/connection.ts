@@ -392,10 +392,12 @@ export class Connection implements ConnectionState {
   sendToClient(data: Buffer): void {
     if (this.ws.readyState !== WebSocket.OPEN) return;
 
-    // Decode MUD output to UTF-8 if the connection uses a different encoding.
+    // Decode MUD output to UTF-8.
     // Priority: CHARSET negotiated (sets utf8=true) > client/route/default encoding.
     const isUtf8 = this.utf8 || this.encoding === 'utf8';
-    const decoded = isUtf8 ? data : Buffer.from(iconv.decode(data, this.encoding));
+    const decoded = isUtf8
+      ? Buffer.from(Connection.decodeUtf8WithFallback(data))
+      : Buffer.from(iconv.decode(data, this.encoding));
 
     // Compress only if both the server allows it and the client requested it
     if (!this.config.compress || !this.mccp) {
@@ -503,5 +505,75 @@ export class Connection implements ConnectionState {
     }
 
     this.onClose(this);
+  }
+
+  /**
+   * Decode a buffer as UTF-8, falling back to Latin-1 for any invalid bytes.
+   * Handles mudlibs with mixed encoding (some files UTF-8, some Latin-1).
+   */
+  static decodeUtf8WithFallback(buf: Buffer): string {
+    let result = '';
+    let i = 0;
+    while (i < buf.length) {
+      const b = buf[i];
+
+      // ASCII
+      if (b < 0x80) {
+        result += String.fromCharCode(b);
+        i++;
+        continue;
+      }
+
+      // 2-byte UTF-8: 110xxxxx 10xxxxxx
+      if (
+        (b & 0xe0) === 0xc0 &&
+        i + 1 < buf.length &&
+        (buf[i + 1] & 0xc0) === 0x80
+      ) {
+        const cp = ((b & 0x1f) << 6) | (buf[i + 1] & 0x3f);
+        result += String.fromCodePoint(cp);
+        i += 2;
+        continue;
+      }
+
+      // 3-byte UTF-8: 1110xxxx 10xxxxxx 10xxxxxx
+      if (
+        (b & 0xf0) === 0xe0 &&
+        i + 2 < buf.length &&
+        (buf[i + 1] & 0xc0) === 0x80 &&
+        (buf[i + 2] & 0xc0) === 0x80
+      ) {
+        const cp =
+          ((b & 0x0f) << 12) |
+          ((buf[i + 1] & 0x3f) << 6) |
+          (buf[i + 2] & 0x3f);
+        result += String.fromCodePoint(cp);
+        i += 3;
+        continue;
+      }
+
+      // 4-byte UTF-8: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+      if (
+        (b & 0xf8) === 0xf0 &&
+        i + 3 < buf.length &&
+        (buf[i + 1] & 0xc0) === 0x80 &&
+        (buf[i + 2] & 0xc0) === 0x80 &&
+        (buf[i + 3] & 0xc0) === 0x80
+      ) {
+        const cp =
+          ((b & 0x07) << 18) |
+          ((buf[i + 1] & 0x3f) << 12) |
+          ((buf[i + 2] & 0x3f) << 6) |
+          (buf[i + 3] & 0x3f);
+        result += String.fromCodePoint(cp);
+        i += 4;
+        continue;
+      }
+
+      // Invalid UTF-8 byte — interpret as Latin-1
+      result += String.fromCharCode(b);
+      i++;
+    }
+    return result;
   }
 }
