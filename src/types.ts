@@ -59,6 +59,7 @@ export interface ClientMessage {
   msg?: string;
   bin?: number[];
   msdp?: { key: string; val: string | string[] };
+  gmcp?: string;
 }
 
 export interface TelnetOptionHandler {
