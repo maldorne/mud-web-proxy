@@ -377,7 +377,8 @@ export class Connection implements ConnectionState {
   sendToClient(data: Buffer): void {
     if (this.ws.readyState !== WebSocket.OPEN) return;
 
-    if (!this.config.compress) {
+    // Compress only if both the server allows it and the client requested it
+    if (!this.config.compress || !this.mccp) {
       this.ws.send(data);
       return;
     }
@@ -443,7 +444,7 @@ export class Connection implements ConnectionState {
     if (this.ws.readyState !== WebSocket.OPEN) return;
 
     const data = Buffer.from(msg);
-    if (this.config.compress) {
+    if (this.config.compress && this.mccp) {
       zlib.deflateRaw(data, (err, buffer) => {
         if (!err && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(buffer.toString('base64'));

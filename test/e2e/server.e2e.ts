@@ -92,10 +92,19 @@ describe('E2E: compressed proxy', () => {
     await telnet.stop();
   });
 
-  it('should send zlib-compressed data when compress is enabled', async () => {
+  it('should send zlib-compressed data when compress is enabled and client requests it', async () => {
     const ws = await connectClient(proxyPort);
 
-    sendConnect(ws, { mud: 'test-mud' });
+    // Send connect with mccp: 1 to request compression
+    ws.send(
+      JSON.stringify({
+        mud: 'test-mud',
+        connect: 1,
+        utf8: 1,
+        mxp: 1,
+        mccp: 1,
+      }),
+    );
     await telnet.waitForConnection();
 
     telnet.send('Compressed hello!\r\n');
