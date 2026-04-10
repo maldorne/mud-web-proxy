@@ -98,12 +98,17 @@ mud-web-proxy:
   environment:
     WS_PORT: "6200"
     TLS_ENABLED: "false"
-    ENABLE_LEGACY_ROUTING: "false"
-    COMPRESS: "true"
-    ALLOWED_ORIGINS: "https://maldorne.org,https://www.maldorne.org"
-    MAX_CONNECTIONS: "500"
     NODE_ENV: "production"
-    MUD_ROUTES: '{"docker-container-mud-name":{"host":"docker-container-mud-name","port":5000},"another-mud":{"host":"another-mud","port":5000}}'
+    COMPRESS: "true"
+    ENABLE_LEGACY_ROUTING: "true"
+    ALLOWED_ORIGINS: "https://maldorne.org"
+    ALLOWED_HOSTS: "muds.maldorne.org"
+    DEFAULT_ENCODING: "latin1"
+    MUD_ROUTES: |-
+      {
+        "my-mud":      {"host": "my-mud",      "port": 5000, "encoding": "latin1"},
+        "another-mud": {"host": "another-mud", "port": 5000, "encoding": "utf8"}
+      }
   labels:
     - traefik.enable=true
     - traefik.http.routers.mud-proxy.rule=Host(`play.maldorne.org`)
@@ -133,10 +138,12 @@ All configuration is done through environment variables:
 
 | Variable                | Default             | Description                                                   |
 | ----------------------- | ------------------- | ------------------------------------------------------------- |
-| `MUD_ROUTES`            | `{}`                | JSON map of MUD names to `{ host, port }` for cluster routing |
-| `ENABLE_LEGACY_ROUTING` | `true`              | Allow clients to specify host:port directly                   |
-| `DEFAULT_HOST`          | `muds.maldorne.org` | Default MUD host for legacy routing                           |
-| `DEFAULT_PORT`          | `5010`              | Default MUD port for legacy routing                           |
+| `MUD_ROUTES`            | `{}`                | JSON map of MUD names to `{ host, port, encoding? }` for cluster routing |
+| `ENABLE_LEGACY_ROUTING` | `true`              | Allow clients to specify host:port directly                              |
+| `ALLOWED_HOSTS`         | —                   | Comma-separated list of hosts allowed for legacy routing (empty = all)   |
+| `DEFAULT_HOST`          | `muds.maldorne.org` | Default MUD host for legacy routing                                      |
+| `DEFAULT_PORT`          | `5010`              | Default MUD port for legacy routing                                      |
+| `DEFAULT_ENCODING`      | `utf8`              | Fallback encoding when not negotiated or configured per route            |
 
 ### Limits and timeouts
 
@@ -159,6 +166,39 @@ All configuration is done through environment variables:
 | `CHAT_ENABLED`      | `true`  | Enable the in-proxy chat system         |
 | `CHAT_MAX_LOG_SIZE` | `300`   | Maximum chat log entries in memory      |
 | `ALLOWED_ORIGINS`   | `*`     | Comma-separated list of allowed origins |
+
+### Character encoding
+
+MUD servers use different character encodings depending on their age and locale. Modern servers typically use UTF-8, while older ones (especially MudOS-based MUDs) often use Latin-1 (ISO-8859-1) or other legacy encodings.
+
+The proxy handles encoding conversion transparently: it decodes MUD output from the configured encoding into UTF-8 before sending it to the WebSocket client, and encodes client input from UTF-8 back into the MUD's encoding.
+
+The encoding for a connection is resolved using the following priority chain (highest to lowest):
+
+1. **Telnet CHARSET negotiation** — if the MUD supports RFC 2066, encoding is negotiated automatically (typically UTF-8).
+2. **Client parameter** — the client can send `encoding` in its connect message (e.g. `{ "encoding": "latin1", "connect": 1 }`). This can be passed from the web client via URL query parameter `?encoding=latin1`.
+3. **Route encoding** — each named route in `MUD_ROUTES` can specify an `encoding` field:
+   ```json
+   {
+     "my-mud": {"host": "my-mud", "port": 5000, "encoding": "latin1"}
+   }
+   ```
+4. **`DEFAULT_ENCODING`** — environment variable, applied when no other source specifies an encoding.
+5. **UTF-8** — if nothing is configured, data is passed through as-is (assumed UTF-8).
+
+Supported encoding names are those recognized by [iconv-lite](https://github.com/ashtuchkin/iconv-lite) (e.g. `utf8`, `latin1`, `cp1252`, `iso-8859-15`, `cp437`).
+
+### Host restrictions
+
+When `ENABLE_LEGACY_ROUTING` is `true`, clients can specify any host and port to connect to. To restrict this, set `ALLOWED_HOSTS` to a comma-separated list of permitted hostnames:
+
+```
+ALLOWED_HOSTS: "muds.maldorne.org,mud.maldorne.org"
+```
+
+Connections to hosts not in the list will be rejected. Named routes (`MUD_ROUTES`) are not affected by this restriction — they always resolve to the configured host.
+
+If `ALLOWED_HOSTS` is empty or not set, no restriction is applied.
 
 ## Development
 
