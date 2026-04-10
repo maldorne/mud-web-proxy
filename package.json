@@ -36,7 +36,7 @@
   "devDependencies": {
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^25.5.2",
+    "@types/node": "^25.6.0",
     "@types/sinon": "^21.0.1",
     "@types/ws": "^8.18.1",
     "c8": "^11.0.0",
@@ -46,7 +46,7 @@
     "eslint-plugin-prettier": "^5.5.5",
     "globals": "^17.4.0",
     "mocha": "^11.7.5",
-    "prettier": "^3.8.1",
+    "prettier": "^3.8.2",
     "sinon": "^21.1.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
