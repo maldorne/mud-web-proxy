@@ -60,7 +60,7 @@ When deployed inside a Docker cluster, TLS termination is handled by a reverse p
 
   * Multi-stage Docker image (Node 20 Alpine, non-root user)
   * Works standalone with TLS certificates or behind a reverse proxy (Traefik)
-  * Route-by-name for Docker clusters: clients send `{ mud: "iluminado" }`, the proxy resolves via Docker DNS
+  * Route-by-name for Docker clusters: clients send `{ mud: "docker-container-mud-name" }`, the proxy resolves via Docker DNS
   * Legacy host:port routing for standalone deployments
   * In-proxy chat system with broadcast and online user list
 
@@ -103,7 +103,7 @@ mud-web-proxy:
     ALLOWED_ORIGINS: "https://maldorne.org,https://www.maldorne.org"
     MAX_CONNECTIONS: "500"
     NODE_ENV: "production"
-    MUD_ROUTES: '{"iluminado":{"host":"iluminado","port":5000},"hexagon-en":{"host":"hexagon-en","port":5000}}'
+    MUD_ROUTES: '{"docker-container-mud-name":{"host":"docker-container-mud-name","port":5000},"another-mud":{"host":"another-mud","port":5000}}'
   labels:
     - traefik.enable=true
     - traefik.http.routers.mud-proxy.rule=Host(`play.maldorne.org`)
