@@ -377,14 +377,19 @@ export class Connection implements ConnectionState {
   sendToClient(data: Buffer): void {
     if (this.ws.readyState !== WebSocket.OPEN) return;
 
+    // Decode from Latin-1 to UTF-8 for non-UTF8 MUD connections
+    const decoded = this.utf8
+      ? data
+      : Buffer.from(iconv.decode(data, 'latin1'));
+
     // Compress only if both the server allows it and the client requested it
     if (!this.config.compress || !this.mccp) {
-      this.ws.send(data);
+      this.ws.send(decoded);
       return;
     }
 
     // Proxy-level compression (zlib deflate + base64)
-    zlib.deflateRaw(data, (err, buffer) => {
+    zlib.deflateRaw(decoded, (err, buffer) => {
       if (err) {
         logger.error(`zlib error: ${err.message}`, this.remoteAddress);
         return;
