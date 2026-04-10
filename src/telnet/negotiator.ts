@@ -62,8 +62,11 @@ export class TelnetNegotiator {
       return Buffer.alloc(0);
     }
 
-    // Single-pass scan for IAC sequences
+    // Single-pass scan: copy clean text to output, strip handled IAC sequences
+    const chunks: Buffer[] = [];
+    let textStart = 0;
     let i = 0;
+
     while (i < data.length - 1) {
       if (data[i] !== T.IAC) {
         i++;
@@ -80,17 +83,24 @@ export class TelnetNegotiator {
           verb === T.DONT) &&
         i + 2 < data.length
       ) {
+        // Flush text before this IAC sequence
+        if (i > textStart) chunks.push(data.subarray(textStart, i));
+
         const option = data[i + 2];
         const handler = this.handlers.get(option);
         if (handler && !handler.negotiated) {
           handler.handleIAC(verb, connection);
         }
         i += 3;
+        textStart = i;
         continue;
       }
 
       // Sub-negotiation: IAC SB <option> ... IAC SE
       if (verb === T.SB && i + 2 < data.length) {
+        // Flush text before this IAC sequence
+        if (i > textStart) chunks.push(data.subarray(textStart, i));
+
         const option = data[i + 2];
         // Find the IAC SE that ends this sub-negotiation
         let end = i + 3;
@@ -108,13 +118,24 @@ export class TelnetNegotiator {
         }
 
         i = end + 2; // skip past IAC SE
+        textStart = i;
         continue;
       }
 
+      // Unrecognized two-byte IAC sequence — strip it
+      if (i > textStart) chunks.push(data.subarray(textStart, i));
       i += 2;
+      textStart = i;
     }
 
-    return data;
+    // Flush remaining text
+    if (textStart < data.length) {
+      chunks.push(data.subarray(textStart));
+    }
+
+    if (chunks.length === 0) return Buffer.alloc(0);
+    if (chunks.length === 1) return chunks[0];
+    return Buffer.concat(chunks);
   }
 
   /**
