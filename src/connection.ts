@@ -377,13 +377,12 @@ export class Connection implements ConnectionState {
   sendToClient(data: Buffer): void {
     if (this.ws.readyState !== WebSocket.OPEN) return;
 
-    // If MCCP is active and data is already compressed, send as-is (base64)
-    if (!this.config.compress || (this.mccp && this.compressed)) {
-      this.ws.send(data.toString('base64'));
+    if (!this.config.compress) {
+      this.ws.send(data);
       return;
     }
 
-    // Proxy-level compression (zlib deflate)
+    // Proxy-level compression (zlib deflate + base64)
     zlib.deflateRaw(data, (err, buffer) => {
       if (err) {
         logger.error(`zlib error: ${err.message}`, this.remoteAddress);
@@ -451,7 +450,7 @@ export class Connection implements ConnectionState {
         }
       });
     } else {
-      this.ws.send(data.toString('base64'));
+      this.ws.send(data);
     }
   }
 

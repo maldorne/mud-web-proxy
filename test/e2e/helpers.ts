@@ -149,7 +149,8 @@ export function sendConnect(
 
 /**
  * Wait for the next message from the WebSocket.
- * Messages from the proxy are base64-encoded (optionally zlib-compressed).
+ * With compress=false the proxy sends raw Buffers.
+ * With compress=true the proxy sends base64-encoded zlib-deflated data.
  */
 export function waitForMessage(
   ws: WebSocket,
@@ -164,24 +165,17 @@ export function waitForMessage(
 
     ws.once('message', (raw: Buffer | string) => {
       clearTimeout(timeout);
-      const b64 = raw.toString();
 
-      // Skip non-base64 messages (like chat)
-      if (b64.startsWith('portal.')) {
-        resolve(b64);
+      if (!compressed) {
+        resolve(raw.toString());
         return;
       }
 
-      const buf = Buffer.from(b64, 'base64');
-
-      if (compressed) {
-        zlib.inflateRaw(buf, (err, result) => {
-          if (err) reject(err);
-          else resolve(result.toString());
-        });
-      } else {
-        resolve(buf.toString());
-      }
+      const buf = Buffer.from(raw.toString(), 'base64');
+      zlib.inflateRaw(buf, (err, result) => {
+        if (err) reject(err);
+        else resolve(result.toString());
+      });
     });
   });
 }
@@ -198,19 +192,14 @@ export function collectMessages(
     const messages: string[] = [];
 
     const handler = (raw: Buffer | string) => {
-      const b64 = raw.toString();
-      if (b64.startsWith('portal.')) {
-        messages.push(b64);
+      if (!compressed) {
+        messages.push(raw.toString());
         return;
       }
-      const buf = Buffer.from(b64, 'base64');
-      if (compressed) {
-        zlib.inflateRaw(buf, (_err, result) => {
-          if (result) messages.push(result.toString());
-        });
-      } else {
-        messages.push(buf.toString());
-      }
+      const buf = Buffer.from(raw.toString(), 'base64');
+      zlib.inflateRaw(buf, (_err, result) => {
+        if (result) messages.push(result.toString());
+      });
     };
 
     ws.on('message', handler);
