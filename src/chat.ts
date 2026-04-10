@@ -87,10 +87,10 @@ export class Chat {
     }
 
     // Broadcast to all connections with chat enabled
-    const broadcast = safeStringify(entry);
+    const broadcast = safeStringify({ type: 'chat', data: entry });
     for (const conn of this.connections()) {
       try {
-        conn.ws.send('portal.chat ' + broadcast);
+        conn.ws.send(broadcast);
       } catch {
         // Connection may be closing
       }
@@ -118,9 +118,7 @@ export class Chat {
       },
     ];
 
-    let text = safeStringify(temp);
-    text = chatCleanup(text);
-    connection.ws.send('portal.chatlog ' + text);
+    connection.ws.send(safeStringify({ type: 'chatlog', data: temp }));
   }
 
   sendUpdate(): void {
