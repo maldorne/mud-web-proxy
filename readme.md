@@ -169,7 +169,7 @@ All configuration is done through environment variables:
 
 ### Character encoding
 
-MUD servers use different character encodings depending on their age and locale. Modern servers typically use UTF-8, while older ones (especially MudOS-based MUDs) often use Latin-1 (ISO-8859-1) or other legacy encodings.
+MUD servers use different character encodings. Modern servers typically use UTF-8, but non-English MUDs running on older drivers sometimes use other encodings.
 
 The proxy handles encoding conversion transparently: it decodes MUD output from the configured encoding into UTF-8 before sending it to the WebSocket client, and encodes client input from UTF-8 back into the MUD's encoding.
 
