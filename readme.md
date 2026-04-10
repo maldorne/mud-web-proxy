@@ -186,7 +186,28 @@ The encoding for a connection is resolved using the following priority chain (hi
 4. **`DEFAULT_ENCODING`** — environment variable, applied when no other source specifies an encoding.
 5. **UTF-8** — if nothing is configured, data is passed through as-is (assumed UTF-8).
 
-Supported encoding names are those recognized by [iconv-lite](https://github.com/ashtuchkin/iconv-lite) (e.g. `utf8`, `latin1`, `cp1252`, `iso-8859-15`, `cp437`).
+Supported encoding names are those recognized by [iconv-lite](https://github.com/ashtuchkin/iconv-lite) (e.g. `utf8`, `latin1`, `cp1252`, `iso-8859-15`, `cp437`, `koi8-r`).
+
+#### Mixed encoding (fallback)
+
+Some MUD codebases have source files in different encodings — for example, older files in Latin-1 and newer files in UTF-8. The proxy supports a fallback encoding for these cases using the `primary/fallback` syntax:
+
+```json
+{
+  "my-mud": {"host": "my-mud", "port": 5000, "encoding": "utf8/latin1"}
+}
+```
+
+When a fallback is configured, the proxy decodes the stream as the primary encoding (UTF-8 in this example). Any byte sequence that is not valid in the primary encoding is decoded using the fallback encoding instead. This works transparently on a per-byte basis within the same message.
+
+Examples:
+- `"utf8/latin1"` — UTF-8 with Latin-1 fallback (Western European MUDs with mixed files)
+- `"utf8/koi8-r"` — UTF-8 with KOI8-R fallback (Russian MUDs with mixed files)
+- `"utf8/cp1252"` — UTF-8 with Windows-1252 fallback
+
+The fallback only applies to the primary-to-client direction (MUD output). Client input is always encoded using the primary encoding. If no fallback is specified (single encoding like `"latin1"` or `"utf8"`), all bytes are decoded using that single encoding with no fallback logic.
+
+The `DEFAULT_ENCODING` and the client `?encoding=` parameter also support the fallback syntax.
 
 ### Host restrictions
 

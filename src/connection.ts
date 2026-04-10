@@ -23,6 +23,7 @@ export class Connection implements ConnectionState {
   mccp = false;
   utf8 = false;
   encoding = 'utf8';
+  fallbackEncoding: string | null = null;
   compressed = false;
   passwordMode = false;
   debugEnabled = false;
@@ -153,7 +154,7 @@ export class Connection implements ConnectionState {
     // msg.utf8 is a client capability hint, not a source-of-truth for the
     // MUD's encoding.  The utf8 flag is only set to true when the MUD
     // successfully negotiates CHARSET via telnet (see charset handler).
-    if (msg.encoding) this.encoding = msg.encoding;
+    if (msg.encoding) Connection.applyEncoding(this, msg.encoding);
     if (msg.debug) this.debugEnabled = true;
     if (msg.mud) this.mudId = msg.mud;
 
@@ -222,10 +223,8 @@ export class Connection implements ConnectionState {
     this.lastConnectMsg = msg;
 
     // Resolve encoding: CHARSET negotiation (later) > client param > route > default
-    if (!msg.encoding && route.encoding) {
-      this.encoding = route.encoding;
-    } else if (!msg.encoding) {
-      this.encoding = this.config.defaultEncoding;
+    if (!msg.encoding) {
+      Connection.applyEncoding(this, route.encoding ?? this.config.defaultEncoding);
     }
 
     metrics.inc('proxy_tcp_connections_total');
@@ -395,9 +394,14 @@ export class Connection implements ConnectionState {
     // Decode MUD output to UTF-8.
     // Priority: CHARSET negotiated (sets utf8=true) > client/route/default encoding.
     const isUtf8 = this.utf8 || this.encoding === 'utf8';
-    const decoded = isUtf8
-      ? Buffer.from(Connection.decodeUtf8WithFallback(data))
-      : Buffer.from(iconv.decode(data, this.encoding));
+    let decoded: Buffer;
+    if (isUtf8 && this.fallbackEncoding) {
+      decoded = Buffer.from(Connection.decodeWithFallback(data, this.fallbackEncoding));
+    } else if (isUtf8) {
+      decoded = data;
+    } else {
+      decoded = Buffer.from(iconv.decode(data, this.encoding));
+    }
 
     // Compress only if both the server allows it and the client requested it
     if (!this.config.compress || !this.mccp) {
@@ -508,17 +512,37 @@ export class Connection implements ConnectionState {
   }
 
   /**
-   * Decode a buffer as UTF-8, falling back to Latin-1 for any invalid bytes.
-   * Handles mudlibs with mixed encoding (some files UTF-8, some Latin-1).
+   * Parse an encoding string like "utf8/latin1" into primary + fallback.
    */
-  static decodeUtf8WithFallback(buf: Buffer): string {
+  static applyEncoding(conn: Connection, raw: string): void {
+    const parts = raw.split('/');
+    conn.encoding = parts[0];
+    conn.fallbackEncoding = parts.length > 1 ? parts[1] : null;
+  }
+
+  /**
+   * Decode a buffer as UTF-8, falling back to the given encoding for any
+   * invalid byte sequences. Handles mudlibs with mixed encoding (some files
+   * in UTF-8, some in the fallback encoding).
+   */
+  static decodeWithFallback(buf: Buffer, fallback: string): string {
     let result = '';
     let i = 0;
+    const invalidBytes: number[] = [];
+
+    const flushInvalid = () => {
+      if (invalidBytes.length > 0) {
+        result += iconv.decode(Buffer.from(invalidBytes), fallback);
+        invalidBytes.length = 0;
+      }
+    };
+
     while (i < buf.length) {
       const b = buf[i];
 
       // ASCII
       if (b < 0x80) {
+        flushInvalid();
         result += String.fromCharCode(b);
         i++;
         continue;
@@ -530,6 +554,7 @@ export class Connection implements ConnectionState {
         i + 1 < buf.length &&
         (buf[i + 1] & 0xc0) === 0x80
       ) {
+        flushInvalid();
         const cp = ((b & 0x1f) << 6) | (buf[i + 1] & 0x3f);
         result += String.fromCodePoint(cp);
         i += 2;
@@ -543,6 +568,7 @@ export class Connection implements ConnectionState {
         (buf[i + 1] & 0xc0) === 0x80 &&
         (buf[i + 2] & 0xc0) === 0x80
       ) {
+        flushInvalid();
         const cp =
           ((b & 0x0f) << 12) |
           ((buf[i + 1] & 0x3f) << 6) |
@@ -560,6 +586,7 @@ export class Connection implements ConnectionState {
         (buf[i + 2] & 0xc0) === 0x80 &&
         (buf[i + 3] & 0xc0) === 0x80
       ) {
+        flushInvalid();
         const cp =
           ((b & 0x07) << 18) |
           ((buf[i + 1] & 0x3f) << 12) |
@@ -570,10 +597,11 @@ export class Connection implements ConnectionState {
         continue;
       }
 
-      // Invalid UTF-8 byte — interpret as Latin-1
-      result += String.fromCharCode(b);
+      // Invalid UTF-8 byte — collect for fallback decoding
+      invalidBytes.push(b);
       i++;
     }
+    flushInvalid();
     return result;
   }
 }

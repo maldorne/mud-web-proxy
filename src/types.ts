@@ -84,6 +84,7 @@ export interface ConnectionState {
   mccp: boolean;
   utf8: boolean;
   encoding: string;
+  fallbackEncoding: string | null;
   compressed: boolean;
   passwordMode: boolean;
   debugEnabled: boolean;
