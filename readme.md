@@ -8,11 +8,11 @@ The proxy is client-agnostic: it can be used with [`mud-web-client`](https://git
 
 ### History
 
-This project was originally a fork of [MUDPortal-Web-App](https://github.com/plamzi/MUDPortal-Web-App), made by [@plamzi](https://github.com/plamzi), creator of [mudportal.com](http://www.mudportal.com/). The original project contained both the web client and proxy server in a single repository. In 2020, [@neverbot](https://github.com/neverbot) forked and split them into separate projects, adding support for secure connections (`wss://` instead of `ws://`).
+This project was originally a fork of [MUDPortal-Web-App](https://github.com/plamzi/MUDPortal-Web-App), made by [@plamzi](https://github.com/plamzi), creator of [mudportal.com](http://www.mudportal.com/). The original project contained both the web client and proxy server in a single repository. In 2020, [@neverbot](https://github.com/neverbot) forked and split them into separate projects, adding support for secure connections (`wss://` instead of `ws://`). Kudos to [@plamzi](https://github.com/plamzi), whose original work made this project possible.
 
 In 2025, the project was ported to ES modules and all dependencies were updated to their latest versions, modernizing the codebase while keeping the original architecture.
 
-In 2026, the project was rewritten from scratch in TypeScript. This is no longer a fork — it is a completely new implementation with a modular architecture, full test suite, Docker support, and designed to run inside a Docker cluster behind a reverse proxy like Traefik. Kudos to [@plamzi](https://github.com/plamzi), whose original work made this project possible.
+In 2026, the project was rewritten from scratch in TypeScript. This is no longer a fork — it is a completely new implementation with a modular architecture, full test suite, Docker support, and designed to run inside a Docker cluster behind a reverse proxy like Traefik.
 
 ### Motivation
 
@@ -46,7 +46,7 @@ When deployed inside a Docker cluster, TLS termination is handled by a reverse p
 
   * Prometheus-compatible metrics endpoint at `/metrics`
   * Health check endpoint at `/health` (returns 503 during shutdown)
-  * Structured JSON logging in production, colored output in development
+  * JSON log output in production (for log aggregators like Loki or Datadog), human-readable colored output in development
   * Log sanitization (strips ANSI escapes and control characters)
 
 ### Security
@@ -118,47 +118,47 @@ All configuration is done through environment variables:
 
 ### Server
 
-| Variable | Default | Description |
-|---|---|---|
-| `WS_PORT` | `6200` | WebSocket server port |
-| `TLS_ENABLED` | `false` | Enable TLS (set to `true` for standalone with certs) |
-| `TLS_CERT_PATH` | `./cert.pem` | Path to TLS certificate |
-| `TLS_KEY_PATH` | `./privkey.pem` | Path to TLS private key |
-| `COMPRESS` | `true` | Enable proxy-level zlib compression |
-| `DEBUG` | `false` | Enable debug logging |
-| `LOG_LEVEL` | `info` | Log level: `debug`, `info`, `warn`, `error` |
-| `NODE_ENV` | — | Set to `production` for JSON log output |
+| Variable        | Default         | Description                                          |
+| --------------- | --------------- | ---------------------------------------------------- |
+| `WS_PORT`       | `6200`          | WebSocket server port                                |
+| `TLS_ENABLED`   | `false`         | Enable TLS (set to `true` for standalone with certs) |
+| `TLS_CERT_PATH` | `./cert.pem`    | Path to TLS certificate                              |
+| `TLS_KEY_PATH`  | `./privkey.pem` | Path to TLS private key                              |
+| `COMPRESS`      | `true`          | Enable proxy-level zlib compression                  |
+| `DEBUG`         | `false`         | Enable debug logging                                 |
+| `LOG_LEVEL`     | `info`          | Log level: `debug`, `info`, `warn`, `error`          |
+| `NODE_ENV`      | —               | Set to `production` for JSON log output              |
 
 ### Routing
 
-| Variable | Default | Description |
-|---|---|---|
-| `MUD_ROUTES` | `{}` | JSON map of MUD names to `{ host, port }` for cluster routing |
-| `ENABLE_LEGACY_ROUTING` | `true` | Allow clients to specify host:port directly |
-| `DEFAULT_HOST` | `muds.maldorne.org` | Default MUD host for legacy routing |
-| `DEFAULT_PORT` | `5010` | Default MUD port for legacy routing |
+| Variable                | Default             | Description                                                   |
+| ----------------------- | ------------------- | ------------------------------------------------------------- |
+| `MUD_ROUTES`            | `{}`                | JSON map of MUD names to `{ host, port }` for cluster routing |
+| `ENABLE_LEGACY_ROUTING` | `true`              | Allow clients to specify host:port directly                   |
+| `DEFAULT_HOST`          | `muds.maldorne.org` | Default MUD host for legacy routing                           |
+| `DEFAULT_PORT`          | `5010`              | Default MUD port for legacy routing                           |
 
 ### Limits and timeouts
 
-| Variable | Default | Description |
-|---|---|---|
-| `MAX_CONNECTIONS` | `500` | Maximum concurrent WebSocket connections |
-| `RATE_LIMIT_PER_IP` | `10` | Max connections per IP per window |
-| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate limit window in milliseconds |
-| `CONNECT_TIMEOUT_MS` | `10000` | TCP connect timeout |
-| `IDLE_TIMEOUT_MS` | `1800000` | Idle connection timeout (30 min) |
-| `PING_INTERVAL_MS` | `30000` | WebSocket ping interval |
-| `PONG_TIMEOUT_MS` | `10000` | Pong response timeout |
-| `RECONNECT_ATTEMPTS` | `3` | Auto-reconnect attempts on TCP disconnect |
-| `RECONNECT_DELAY_MS` | `2000` | Base delay between reconnect attempts |
+| Variable               | Default   | Description                               |
+| ---------------------- | --------- | ----------------------------------------- |
+| `MAX_CONNECTIONS`      | `500`     | Maximum concurrent WebSocket connections  |
+| `RATE_LIMIT_PER_IP`    | `10`      | Max connections per IP per window         |
+| `RATE_LIMIT_WINDOW_MS` | `60000`   | Rate limit window in milliseconds         |
+| `CONNECT_TIMEOUT_MS`   | `10000`   | TCP connect timeout                       |
+| `IDLE_TIMEOUT_MS`      | `1800000` | Idle connection timeout (30 min)          |
+| `PING_INTERVAL_MS`     | `30000`   | WebSocket ping interval                   |
+| `PONG_TIMEOUT_MS`      | `10000`   | Pong response timeout                     |
+| `RECONNECT_ATTEMPTS`   | `3`       | Auto-reconnect attempts on TCP disconnect |
+| `RECONNECT_DELAY_MS`   | `2000`    | Base delay between reconnect attempts     |
 
 ### Chat
 
-| Variable | Default | Description |
-|---|---|---|
-| `CHAT_ENABLED` | `true` | Enable the in-proxy chat system |
-| `CHAT_MAX_LOG_SIZE` | `300` | Maximum chat log entries in memory |
-| `ALLOWED_ORIGINS` | `*` | Comma-separated list of allowed origins |
+| Variable            | Default | Description                             |
+| ------------------- | ------- | --------------------------------------- |
+| `CHAT_ENABLED`      | `true`  | Enable the in-proxy chat system         |
+| `CHAT_MAX_LOG_SIZE` | `300`   | Maximum chat log entries in memory      |
+| `ALLOWED_ORIGINS`   | `*`     | Comma-separated list of allowed origins |
 
 ## Development
 
