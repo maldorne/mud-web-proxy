@@ -150,7 +150,9 @@ export class Connection implements ConnectionState {
     if (msg.name) this.name = msg.name;
     if (msg.client) this.client = msg.client;
     if (msg.mccp) this.mccp = true;
-    if (msg.utf8) this.utf8 = true;
+    // msg.utf8 is a client capability hint, not a source-of-truth for the
+    // MUD's encoding.  The utf8 flag is only set to true when the MUD
+    // successfully negotiates CHARSET via telnet (see charset handler).
     if (msg.encoding) this.encoding = msg.encoding;
     if (msg.debug) this.debugEnabled = true;
     if (msg.mud) this.mudId = msg.mud;
