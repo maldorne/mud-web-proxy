@@ -4,6 +4,7 @@ import type { Socket } from 'net';
 export interface MudRoute {
   host: string;
   port: number;
+  encoding?: string;
 }
 
 export interface ProxyConfig {
@@ -24,6 +25,7 @@ export interface ProxyConfig {
   rateLimitWindowMs: number;
   enableLegacyRouting: boolean;
   allowedHosts: string[];
+  defaultEncoding: string;
   routes: Record<string, MudRoute>;
   tls: {
     enabled: boolean;
@@ -54,6 +56,7 @@ export interface ClientMessage {
   client?: string;
   mccp?: number;
   utf8?: number;
+  encoding?: string;
   debug?: number;
   chat?: 1;
   channel?: string;
@@ -80,6 +83,7 @@ export interface ConnectionState {
   mudId?: string;
   mccp: boolean;
   utf8: boolean;
+  encoding: string;
   compressed: boolean;
   passwordMode: boolean;
   debugEnabled: boolean;

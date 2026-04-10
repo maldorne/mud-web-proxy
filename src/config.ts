@@ -20,12 +20,16 @@ function parseRoutes(value: string | undefined): Record<string, MudRoute> {
   try {
     const parsed = JSON.parse(value) as Record<
       string,
-      { host: string; port: number }
+      { host: string; port: number; encoding?: string }
     >;
     const routes: Record<string, MudRoute> = {};
     for (const [key, route] of Object.entries(parsed)) {
       if (typeof route.host === 'string' && typeof route.port === 'number') {
-        routes[key] = { host: route.host, port: route.port };
+        routes[key] = {
+          host: route.host,
+          port: route.port,
+          ...(route.encoding && { encoding: route.encoding }),
+        };
       } else {
         logger.warn(`Invalid route for "${key}", skipping`);
       }
@@ -65,6 +69,7 @@ export function loadConfig(): ProxyConfig {
     allowedHosts: env.ALLOWED_HOSTS
       ? env.ALLOWED_HOSTS.split(',').map((s) => s.trim())
       : [],
+    defaultEncoding: env.DEFAULT_ENCODING ?? 'utf8',
     routes: parseRoutes(env.MUD_ROUTES),
     tls: {
       enabled: parseBoolean(env.TLS_ENABLED, false),

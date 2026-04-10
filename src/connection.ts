@@ -22,6 +22,7 @@ export class Connection implements ConnectionState {
   mudId?: string;
   mccp = false;
   utf8 = false;
+  encoding = 'utf8';
   compressed = false;
   passwordMode = false;
   debugEnabled = false;
@@ -150,6 +151,7 @@ export class Connection implements ConnectionState {
     if (msg.client) this.client = msg.client;
     if (msg.mccp) this.mccp = true;
     if (msg.utf8) this.utf8 = true;
+    if (msg.encoding) this.encoding = msg.encoding;
     if (msg.debug) this.debugEnabled = true;
     if (msg.mud) this.mudId = msg.mud;
 
@@ -216,6 +218,13 @@ export class Connection implements ConnectionState {
     this.compressed = false;
     this.lastRoute = route;
     this.lastConnectMsg = msg;
+
+    // Resolve encoding: CHARSET negotiation (later) > client param > route > default
+    if (!msg.encoding && route.encoding) {
+      this.encoding = route.encoding;
+    } else if (!msg.encoding) {
+      this.encoding = this.config.defaultEncoding;
+    }
 
     metrics.inc('proxy_tcp_connections_total');
     logger.info(
@@ -377,10 +386,10 @@ export class Connection implements ConnectionState {
   sendToClient(data: Buffer): void {
     if (this.ws.readyState !== WebSocket.OPEN) return;
 
-    // Decode from Latin-1 to UTF-8 for non-UTF8 MUD connections
-    const decoded = this.utf8
-      ? data
-      : Buffer.from(iconv.decode(data, 'latin1'));
+    // Decode MUD output to UTF-8 if the connection uses a different encoding.
+    // Priority: CHARSET negotiated (sets utf8=true) > client/route/default encoding.
+    const isUtf8 = this.utf8 || this.encoding === 'utf8';
+    const decoded = isUtf8 ? data : Buffer.from(iconv.decode(data, this.encoding));
 
     // Compress only if both the server allows it and the client requested it
     if (!this.config.compress || !this.mccp) {
@@ -411,9 +420,10 @@ export class Connection implements ConnectionState {
       logger.debug(`write bin: ${raw.join(',')}`, this.remoteAddress);
     }
 
-    // Encode as latin1 for non-UTF8 connections, UTF-8 otherwise
+    // Encode to the MUD's encoding for non-UTF8 connections
+    const isUtf8 = this.utf8 || this.encoding === 'utf8';
     try {
-      const encoded = this.utf8 ? buf : iconv.encode(buf.toString(), 'latin1');
+      const encoded = isUtf8 ? buf : iconv.encode(buf.toString(), this.encoding);
       this.tcp.write(encoded);
     } catch (ex) {
       logger.error(`Encoding error: ${ex}`, this.remoteAddress);
@@ -437,8 +447,9 @@ export class Connection implements ConnectionState {
     }
 
     const buf = typeof data === 'string' ? Buffer.from(data) : data;
+    const isUtf8 = this.utf8 || this.encoding === 'utf8';
     try {
-      const encoded = this.utf8 ? buf : iconv.encode(buf.toString(), 'latin1');
+      const encoded = isUtf8 ? buf : iconv.encode(buf.toString(), this.encoding);
       if (this.tcp.writable) this.tcp.write(encoded);
     } catch {
       if (this.tcp.writable) this.tcp.write(buf);

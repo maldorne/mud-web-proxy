@@ -11,6 +11,7 @@ export const clientMessageSchema = z
     client: z.string().max(128).optional(),
     mccp: z.number().int().min(0).max(1).optional(),
     utf8: z.number().int().min(0).max(1).optional(),
+    encoding: z.string().max(32).optional(),
     debug: z.number().int().min(0).max(1).optional(),
     chat: z.literal(1).optional(),
     channel: z.string().max(32).optional(),
