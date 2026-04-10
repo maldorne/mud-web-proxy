@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v5
       - name: Login onto ghcr
         run: |
-          docker login --username maldorne-bot --password ${{ secrets.MALDORNE_BOT_GHCR_TOKEN }} ghcr.io
+          echo "${{ secrets.MALDORNE_BOT_GHCR_TOKEN }}" | docker login ghcr.io --username maldorne-bot --password-stdin
       - name: Build image
         run: |
           docker build --no-cache . -t ghcr.io/maldorne/mud-web-proxy:latest
