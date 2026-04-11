@@ -112,7 +112,7 @@ export class TelnetNegotiator {
         }
 
         const handler = this.handlers.get(option);
-        if (handler && !handler.negotiated) {
+        if (handler) {
           const sbData = data.subarray(i + 3, end);
           handler.handleSB(sbData, connection);
         }

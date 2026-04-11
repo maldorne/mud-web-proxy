@@ -37,8 +37,11 @@ export class GmcpHandler implements TelnetOptionHandler {
     this.sendGMCP(connection, 'client_ip ' + connection.remoteAddress);
   }
 
-  handleSB(_data: Buffer, _connection: ConnectionState): void {
-    // GMCP SB data is forwarded to the client as-is
+  handleSB(data: Buffer, connection: ConnectionState): void {
+    // Forward GMCP subnegotiation data to the client as-is (wrapped in IAC SB/SE)
+    const start = Buffer.from([T.IAC, T.SB, T.GMCP]);
+    const stop = Buffer.from([T.IAC, T.SE]);
+    connection.sendToClient(Buffer.concat([start, data, stop]));
   }
 
   sendGMCP(connection: ConnectionState, msg: string): void {

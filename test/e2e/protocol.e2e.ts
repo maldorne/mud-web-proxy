@@ -110,18 +110,21 @@ describe('E2E: telnet protocol negotiation', function () {
     sendConnect(ws, { mud: 'test-mud' });
     await mud.waitForConnection();
 
-    // Wait for negotiation
+    // Wait for negotiation to settle
     await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Drain any pending negotiation messages
+    await collectMessages(ws, 200);
+
+    // Set up listener BEFORE sending GMCP to avoid race condition
+    const messagePromise = waitForMessage(ws, 3000);
 
     // MUD sends a GMCP message
     mud.sendGMCP('Char.Status {"hp":100,"mp":50}');
 
-    // Collect messages — GMCP data arrives as part of the telnet stream
-    const messages = await collectMessages(ws, 500);
-    const combined = messages.join('');
-
-    // The GMCP data should be in the raw stream forwarded to client
-    expect(combined.length).to.be.greaterThan(0);
+    // The GMCP data should arrive as part of the telnet stream
+    const received = await messagePromise;
+    expect(received.length).to.be.greaterThan(0);
 
     ws.close();
   });
