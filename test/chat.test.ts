@@ -81,7 +81,7 @@ describe('Chat', () => {
     const send2 = conn2.ws.send as sinon.SinonStub;
     expect(send1.calledOnce).to.be.true;
     expect(send2.calledOnce).to.be.true;
-    expect(send1.firstCall.args[0]).to.include('portal.chat');
+    expect(send1.firstCall.args[0]).to.include('"type":"chat"');
     expect(send1.firstCall.args[0]).to.include('Hello everyone!');
   });
 
@@ -96,7 +96,7 @@ describe('Chat', () => {
 
     const send = conn.ws.send as sinon.SinonStub;
     expect(send.calledOnce).to.be.true;
-    expect(send.firstCall.args[0]).to.include('portal.chatlog');
+    expect(send.firstCall.args[0]).to.include('"type":"chatlog"');
     expect(send.firstCall.args[0]).to.include('online:');
   });
 
@@ -164,7 +164,7 @@ describe('Chat', () => {
 
     const send = conn.ws.send as sinon.SinonStub;
     const lastCall = send.lastCall.args[0] as string;
-    expect(lastCall).to.include('portal.chatlog');
+    expect(lastCall).to.include('"type":"chatlog"');
     // Should not contain msg0 or msg1 (trimmed)
     expect(lastCall).to.not.include('msg0');
 
