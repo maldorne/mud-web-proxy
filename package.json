@@ -21,6 +21,7 @@
     "dev": "tsx watch src/index.ts",
     "test": "NODE_ENV=test npx c8 mocha --require tsx 'test/**/*.{test,e2e}.ts'",
     "test:only": "NODE_ENV=test mocha --require tsx 'test/**/*.{test,e2e}.ts'",
+    "test:mute": "NODE_ENV=test LOG_LEVEL=silent mocha --require tsx 'test/**/*.{test,e2e}.ts'",
     "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix"
   },

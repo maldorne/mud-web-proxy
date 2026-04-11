@@ -20,7 +20,7 @@ jobs:
       - name: Build TypeScript
         run: npm run build
       - name: Run tests
-        run: npm test
+        run: npm run test
       - name: Login onto ghcr
         run: |
           echo "${{ secrets.MALDORNE_BOT_GHCR_TOKEN }}" | docker login ghcr.io --username maldorne-bot --password-stdin

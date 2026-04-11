@@ -137,21 +137,35 @@ describe('E2E: compressed proxy', () => {
     ws.close();
   });
 
-  it('should send raw data when compress is enabled but client sends mccp: 0', async () => {
+  it('should send raw data when compress is enabled but client sends mccp: 0', async function () {
     const ws = await connectClient(proxyPort);
 
-    // Send connect with mccp: 0 — client does not want compression
+    // Collect all messages from the start
+    const messages: Buffer[] = [];
+    ws.on('message', (data: Buffer) => {
+      messages.push(Buffer.isBuffer(data) ? data : Buffer.from(data));
+    });
+
     sendConnect(ws, { mud: 'test-mud' });
     await telnet.waitForConnection();
 
     telnet.send('Raw hello!\r\n');
 
+    // Wait until we receive a message containing our text
     const raw = await new Promise<Buffer>((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('timeout')), 5000);
-      ws.once('message', (data: Buffer) => {
-        clearTimeout(timeout);
-        resolve(Buffer.isBuffer(data) ? data : Buffer.from(data));
-      });
+      const check = () => {
+        const found = messages.find((m) =>
+          m.toString('utf-8').includes('Raw hello!'),
+        );
+        if (found) {
+          clearTimeout(timeout);
+          resolve(found);
+        } else {
+          setTimeout(check, 50);
+        }
+      };
+      check();
     });
 
     // Should be raw text, not base64-encoded
