@@ -98,10 +98,7 @@ export class MockTelnetMud {
       const verb = data[i + 1];
 
       // Handle WILL/DO responses
-      if (
-        (verb === T.WILL || verb === T.DO) &&
-        i + 2 < data.length
-      ) {
+      if ((verb === T.WILL || verb === T.DO) && i + 2 < data.length) {
         const option = data[i + 2];
         this.trackNegotiation(option);
 
@@ -115,18 +112,14 @@ export class MockTelnetMud {
         // If proxy sends WILL NEW-ENVIRON, request it
         if (verb === T.WILL && option === T.NEW_ENVIRON) {
           socket.write(
-            Buffer.from([
-              T.IAC, T.SB, T.NEW_ENVIRON, T.REQUEST, T.IAC, T.SE,
-            ]),
+            Buffer.from([T.IAC, T.SB, T.NEW_ENVIRON, T.REQUEST, T.IAC, T.SE]),
           );
         }
 
         // If proxy sends WILL CHARSET, offer UTF-8
         if (verb === T.WILL && option === T.CHARSET) {
           socket.write(
-            Buffer.from([
-              T.IAC, T.SB, T.CHARSET, T.REQUEST, T.IAC, T.SE,
-            ]),
+            Buffer.from([T.IAC, T.SB, T.CHARSET, T.REQUEST, T.IAC, T.SE]),
           );
         }
 
@@ -171,10 +164,7 @@ export class MockTelnetMud {
       }
 
       // Handle WONT/DONT
-      if (
-        (verb === T.WONT || verb === T.DONT) &&
-        i + 2 < data.length
-      ) {
+      if ((verb === T.WONT || verb === T.DONT) && i + 2 < data.length) {
         i += 3;
         continue;
       }

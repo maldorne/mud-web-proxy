@@ -224,7 +224,10 @@ export class Connection implements ConnectionState {
 
     // Resolve encoding: CHARSET negotiation (later) > client param > route > default
     if (!msg.encoding) {
-      Connection.applyEncoding(this, route.encoding ?? this.config.defaultEncoding);
+      Connection.applyEncoding(
+        this,
+        route.encoding ?? this.config.defaultEncoding,
+      );
     }
 
     metrics.inc('proxy_tcp_connections_total');
@@ -396,7 +399,9 @@ export class Connection implements ConnectionState {
     const isUtf8 = this.utf8 || this.encoding === 'utf8';
     let decoded: Buffer;
     if (isUtf8 && this.fallbackEncoding) {
-      decoded = Buffer.from(Connection.decodeWithFallback(data, this.fallbackEncoding));
+      decoded = Buffer.from(
+        Connection.decodeWithFallback(data, this.fallbackEncoding),
+      );
     } else if (isUtf8) {
       decoded = data;
     } else {
@@ -456,7 +461,9 @@ export class Connection implements ConnectionState {
     const buf = typeof data === 'string' ? Buffer.from(data) : data;
     const isUtf8 = this.utf8 || this.encoding === 'utf8';
     try {
-      const encoded = isUtf8 ? buf : iconv.encode(buf.toString(), this.encoding);
+      const encoded = isUtf8
+        ? buf
+        : iconv.encode(buf.toString(), this.encoding);
       if (this.tcp.writable) this.tcp.write(encoded);
     } catch {
       if (this.tcp.writable) this.tcp.write(buf);

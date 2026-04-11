@@ -5,7 +5,9 @@ import { loadConfig } from '../../src/config.js';
 import type { ConnectionState } from '../../src/types.js';
 import * as T from '../../src/telnet/constants.js';
 
-function makeConnection(overrides: Partial<ConnectionState> = {}): ConnectionState {
+function makeConnection(
+  overrides: Partial<ConnectionState> = {},
+): ConnectionState {
   return {
     remoteAddress: '127.0.0.1',
     mccp: false,
@@ -121,10 +123,7 @@ describe('TelnetNegotiator', () => {
     const conn = makeConnection();
 
     // First: IAC DO CHARSET
-    negotiator.processServerData(
-      Buffer.from([T.IAC, T.DO, T.CHARSET]),
-      conn,
-    );
+    negotiator.processServerData(Buffer.from([T.IAC, T.DO, T.CHARSET]), conn);
 
     // Then: IAC SB CHARSET ... IAC SE
     negotiator.processServerData(

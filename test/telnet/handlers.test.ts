@@ -13,7 +13,9 @@ import { EchoHandler } from '../../src/telnet/handlers/echo.js';
 import { CharsetHandler } from '../../src/telnet/handlers/charset.js';
 import { GmcpHandler } from '../../src/telnet/handlers/gmcp.js';
 
-function makeConnection(overrides: Partial<ConnectionState> = {}): ConnectionState {
+function makeConnection(
+  overrides: Partial<ConnectionState> = {},
+): ConnectionState {
   return {
     remoteAddress: '127.0.0.1',
     mccp: false,
@@ -401,7 +403,10 @@ describe('CharsetHandler', () => {
 describe('GmcpHandler', () => {
   it('should respond WILL GMCP on IAC DO and send handshake', () => {
     const handler = new GmcpHandler(['client test', 'client_version 1.0']);
-    const conn = makeConnection({ client: 'my-client', remoteAddress: '10.0.0.1' });
+    const conn = makeConnection({
+      client: 'my-client',
+      remoteAddress: '10.0.0.1',
+    });
 
     handler.handleIAC(T.DO, conn);
 
@@ -424,7 +429,10 @@ describe('GmcpHandler', () => {
 
   it('should use client name when provided for first GMCP message', () => {
     const handler = new GmcpHandler(['client default', 'client_version 1.0']);
-    const conn = makeConnection({ client: 'custom-client', remoteAddress: '10.0.0.1' });
+    const conn = makeConnection({
+      client: 'custom-client',
+      remoteAddress: '10.0.0.1',
+    });
 
     handler.handleIAC(T.DO, conn);
 

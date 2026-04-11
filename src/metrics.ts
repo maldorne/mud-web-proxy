@@ -65,10 +65,7 @@ metrics.counter(
   'proxy_tcp_connections_total',
   'Total TCP connections opened to MUD servers',
 );
-metrics.counter(
-  'proxy_tcp_errors_total',
-  'Total TCP connection errors',
-);
+metrics.counter('proxy_tcp_errors_total', 'Total TCP connection errors');
 metrics.counter(
   'proxy_messages_from_client_total',
   'Total messages received from WebSocket clients',

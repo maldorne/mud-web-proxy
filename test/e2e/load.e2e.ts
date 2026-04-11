@@ -33,12 +33,14 @@ describe('E2E: load test', function () {
     const clients: WebSocket[] = [];
 
     // Open all connections concurrently
-    const connectPromises = Array.from({ length: count }, () =>
-      new Promise<WebSocket>((resolve, reject) => {
-        const ws = new WebSocket(`ws://127.0.0.1:${proxyPort}`);
-        ws.on('open', () => resolve(ws));
-        ws.on('error', reject);
-      }),
+    const connectPromises = Array.from(
+      { length: count },
+      () =>
+        new Promise<WebSocket>((resolve, reject) => {
+          const ws = new WebSocket(`ws://127.0.0.1:${proxyPort}`);
+          ws.on('open', () => resolve(ws));
+          ws.on('error', reject);
+        }),
     );
 
     const results = await Promise.allSettled(connectPromises);

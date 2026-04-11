@@ -27,7 +27,9 @@ describe('Router', () => {
       },
     });
     const router = new Router(config);
-    expect(() => router.resolve({ mud: 'unknown' })).to.throw(/Unknown MUD "unknown"/);
+    expect(() => router.resolve({ mud: 'unknown' })).to.throw(
+      /Unknown MUD "unknown"/,
+    );
   });
 
   it('should use legacy routing when enabled and no mud field', () => {

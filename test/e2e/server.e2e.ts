@@ -6,7 +6,6 @@ import {
   startProxy,
   connectClient,
   sendConnect,
-  waitForMessage,
 } from './helpers.js';
 
 describe('E2E: server limits and origin', () => {
@@ -39,21 +38,23 @@ describe('E2E: server limits and origin', () => {
     // Third connection: set up message listener before connecting
     const ws3 = new WebSocket(`ws://127.0.0.1:${proxyPort}`);
 
-    const result = await new Promise<{ msg: string; closed: boolean }>((resolve) => {
-      let msg = '';
-      let closed = false;
+    const result = await new Promise<{ msg: string; closed: boolean }>(
+      (resolve) => {
+        let msg = '';
+        let closed = false;
 
-      ws3.on('message', (data: Buffer) => {
-        msg = data.toString();
-      });
-      ws3.on('close', () => {
-        closed = true;
-        resolve({ msg, closed });
-      });
+        ws3.on('message', (data: Buffer) => {
+          msg = data.toString();
+        });
+        ws3.on('close', () => {
+          closed = true;
+          resolve({ msg, closed });
+        });
 
-      // Fallback timeout
-      setTimeout(() => resolve({ msg, closed }), 3000);
-    });
+        // Fallback timeout
+        setTimeout(() => resolve({ msg, closed }), 3000);
+      },
+    );
 
     expect(result.closed).to.be.true;
 
@@ -157,17 +158,16 @@ describe('E2E: compressed proxy', () => {
     const text = raw.toString('utf-8');
     expect(text).to.include('Raw hello!');
 
-    // Verify it's NOT valid base64+zlib (would throw on inflateRaw)
+    // Verify it's NOT valid base64+zlib (would throw on inflateRawSync)
     const zlib = await import('zlib');
-    let isCompressed = false;
+    let inflated = false;
     try {
-      const buf = Buffer.from(text, 'base64');
-      zlib.inflateRawSync(buf);
-      isCompressed = true;
+      zlib.inflateRawSync(Buffer.from(text, 'base64'));
+      inflated = true;
     } catch {
-      isCompressed = false;
+      // expected — raw data is not compressed
     }
-    expect(isCompressed).to.be.false;
+    expect(inflated).to.be.false;
 
     ws.close();
   });

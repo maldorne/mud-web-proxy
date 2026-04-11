@@ -27,9 +27,7 @@ export class Router {
       );
     }
     if (this.allowedHosts.length > 0) {
-      logger.info(
-        `Allowed hosts: ${this.allowedHosts.join(', ')}`,
-      );
+      logger.info(`Allowed hosts: ${this.allowedHosts.join(', ')}`);
     }
   }
 

@@ -5,9 +5,7 @@ import { Chat } from '../src/chat.js';
 import { loadConfig } from '../src/config.js';
 import type { Connection } from '../src/connection.js';
 
-function mockConnection(
-  overrides: Partial<Connection> = {},
-): Connection {
+function mockConnection(overrides: Partial<Connection> = {}): Connection {
   return {
     remoteAddress: '127.0.0.1',
     name: 'TestUser',
@@ -103,7 +101,11 @@ describe('Chat', () => {
   it('should include online users in chatlog status', () => {
     readStub.throws(new Error('ENOENT'));
 
-    const conn1 = mockConnection({ name: 'Alice', tcp: {} as Connection['tcp'] , mudId: 'iluminado' });
+    const conn1 = mockConnection({
+      name: 'Alice',
+      tcp: {} as Connection['tcp'],
+      mudId: 'iluminado',
+    });
     const conn2 = mockConnection({ name: 'Bob' });
     const connections = [conn1, conn2];
     const chat = new Chat(loadConfig(), () => connections);
