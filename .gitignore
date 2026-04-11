@@ -1,5 +1,6 @@
 cert.pem
 privkey.pem
+chat.json
 **/.DS_Store
 node_modules/
 dist/
