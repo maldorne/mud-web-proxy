@@ -135,4 +135,40 @@ describe('E2E: compressed proxy', () => {
 
     ws.close();
   });
+
+  it('should send raw data when compress is enabled but client sends mccp: 0', async () => {
+    const ws = await connectClient(proxyPort);
+
+    // Send connect with mccp: 0 — client does not want compression
+    sendConnect(ws, { mud: 'test-mud' });
+    await telnet.waitForConnection();
+
+    telnet.send('Raw hello!\r\n');
+
+    const raw = await new Promise<Buffer>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('timeout')), 5000);
+      ws.once('message', (data: Buffer) => {
+        clearTimeout(timeout);
+        resolve(Buffer.isBuffer(data) ? data : Buffer.from(data));
+      });
+    });
+
+    // Should be raw text, not base64-encoded
+    const text = raw.toString('utf-8');
+    expect(text).to.include('Raw hello!');
+
+    // Verify it's NOT valid base64+zlib (would throw on inflateRaw)
+    const zlib = await import('zlib');
+    let isCompressed = false;
+    try {
+      const buf = Buffer.from(text, 'base64');
+      zlib.inflateRawSync(buf);
+      isCompressed = true;
+    } catch {
+      isCompressed = false;
+    }
+    expect(isCompressed).to.be.false;
+
+    ws.close();
+  });
 });
