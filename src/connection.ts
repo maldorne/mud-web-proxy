@@ -204,19 +204,31 @@ export class Connection implements ConnectionState {
    * This must be called immediately after the TCP connection is established
    * and before any other data is sent to the MUD.
    */
-  private sendProxyHeader(route: MudRoute): void {
-    if (!route.proxyProtocol || !this.tcp) return;
+  /**
+   * Send a PROXY protocol v1 header and return a promise that resolves
+   * once the header has been flushed to the kernel buffer. The caller
+   * should await this before registering data handlers, so the MUD driver
+   * has a chance to read the header via MSG_PEEK before any other data
+   * arrives on the socket.
+   */
+  private sendProxyHeader(route: MudRoute): Promise<void> {
+    if (!route.proxyProtocol || !this.tcp) return Promise.resolve();
 
     const clientIp = this.remoteAddress || '127.0.0.1';
     const localAddr = this.tcp.localAddress || '127.0.0.1';
     const localPort = this.tcp.localPort || 0;
     // Use 0 as source port since the WebSocket client port is not meaningful
     const header = `PROXY TCP4 ${clientIp} ${localAddr} 0 ${localPort}\r\n`;
-    this.tcp.write(header);
-    logger.debug(
-      `PROXY protocol header sent for ${clientIp}`,
-      this.remoteAddress,
-    );
+
+    return new Promise<void>((resolve) => {
+      this.tcp!.write(header, () => {
+        logger.info(
+          `PROXY protocol header sent: ${header.trim()}`,
+          this.remoteAddress,
+        );
+        resolve();
+      });
+    });
   }
 
   private connectToMud(msg: ClientMessage): void {
@@ -261,12 +273,17 @@ export class Connection implements ConnectionState {
         port: route.port,
         timeout: this.config.connectTimeoutMs,
       },
-      () => {
+      async () => {
         this.tcpConnected = true;
         // Disable the connect timeout now that the TCP connection is established.
         // The idle timer (WebSocket-level) handles inactivity from here on.
         this.tcp!.setTimeout(0);
-        this.sendProxyHeader(route);
+        // Send PROXY header and wait for flush before allowing data to flow.
+        // The MUD driver reads the header via MSG_PEEK on a non-blocking
+        // socket, so the header must be in the kernel buffer before the
+        // driver processes the new connection.
+        await this.sendProxyHeader(route);
+        this.tcp!.resume();
         logger.info(
           `TCP connected to ${route.host}:${route.port}`,
           this.remoteAddress,
@@ -274,6 +291,10 @@ export class Connection implements ConnectionState {
         this.resetIdleTimer();
       },
     );
+
+    // Pause the socket until the PROXY header has been sent, so incoming
+    // MUD data doesn't trigger responses before the header is flushed.
+    this.tcp.pause();
 
     this.tcp.on('data', (data: Buffer) => {
       metrics.inc('proxy_messages_from_mud_total');
@@ -360,9 +381,10 @@ export class Connection implements ConnectionState {
           port: route.port,
           timeout: this.config.connectTimeoutMs,
         },
-        () => {
+        async () => {
           this.tcp!.setTimeout(0);
-          this.sendProxyHeader(route);
+          await this.sendProxyHeader(route);
+          this.tcp!.resume();
           logger.info(
             `Reconnected to ${route.host}:${route.port}`,
             this.remoteAddress,
@@ -373,6 +395,8 @@ export class Connection implements ConnectionState {
           this.resetIdleTimer();
         },
       );
+
+      this.tcp.pause();
 
       this.tcp.on('data', (data: Buffer) => {
         metrics.inc('proxy_messages_from_mud_total');
