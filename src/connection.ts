@@ -199,6 +199,26 @@ export class Connection implements ConnectionState {
     }
   }
 
+  /**
+   * Send a PROXY protocol v1 header if the route has proxyProtocol enabled.
+   * This must be called immediately after the TCP connection is established
+   * and before any other data is sent to the MUD.
+   */
+  private sendProxyHeader(route: MudRoute): void {
+    if (!route.proxyProtocol || !this.tcp) return;
+
+    const clientIp = this.remoteAddress || '127.0.0.1';
+    const localAddr = this.tcp.localAddress || '127.0.0.1';
+    const localPort = this.tcp.localPort || 0;
+    // Use 0 as source port since the WebSocket client port is not meaningful
+    const header = `PROXY TCP4 ${clientIp} ${localAddr} 0 ${localPort}\r\n`;
+    this.tcp.write(header);
+    logger.debug(
+      `PROXY protocol header sent for ${clientIp}`,
+      this.remoteAddress,
+    );
+  }
+
   private connectToMud(msg: ClientMessage): void {
     let route: MudRoute;
     try {
@@ -246,6 +266,7 @@ export class Connection implements ConnectionState {
         // Disable the connect timeout now that the TCP connection is established.
         // The idle timer (WebSocket-level) handles inactivity from here on.
         this.tcp!.setTimeout(0);
+        this.sendProxyHeader(route);
         logger.info(
           `TCP connected to ${route.host}:${route.port}`,
           this.remoteAddress,
@@ -341,6 +362,7 @@ export class Connection implements ConnectionState {
         },
         () => {
           this.tcp!.setTimeout(0);
+          this.sendProxyHeader(route);
           logger.info(
             `Reconnected to ${route.host}:${route.port}`,
             this.remoteAddress,

@@ -5,6 +5,7 @@ export interface MudRoute {
   host: string;
   port: number;
   encoding?: string;
+  proxyProtocol?: boolean;
 }
 
 export interface ProxyConfig {

@@ -20,7 +20,12 @@ function parseRoutes(value: string | undefined): Record<string, MudRoute> {
   try {
     const parsed = JSON.parse(value) as Record<
       string,
-      { host: string; port: number; encoding?: string }
+      {
+        host: string;
+        port: number;
+        encoding?: string;
+        proxyProtocol?: boolean;
+      }
     >;
     const routes: Record<string, MudRoute> = {};
     for (const [key, route] of Object.entries(parsed)) {
@@ -29,6 +34,7 @@ function parseRoutes(value: string | undefined): Record<string, MudRoute> {
           host: route.host,
           port: route.port,
           ...(route.encoding && { encoding: route.encoding }),
+          ...(route.proxyProtocol && { proxyProtocol: route.proxyProtocol }),
         };
       } else {
         logger.warn(`Invalid route for "${key}", skipping`);
