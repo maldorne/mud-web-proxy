@@ -40,10 +40,12 @@ export class Connection implements ConnectionState {
   private pongTimeout: ReturnType<typeof setTimeout> | null = null;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private onClose: (connection: Connection) => void;
-  private lastRoute: MudRoute | null = null;
-  private lastConnectMsg: ClientMessage | null = null;
-  private reconnectCount = 0;
   private tcpConnected = false;
+  // Fields previously used by the auto-reconnect mechanism (now disabled).
+  // Kept commented in case we want to bring it back later.
+  // private lastRoute: MudRoute | null = null;
+  // private lastConnectMsg: ClientMessage | null = null;
+  // private reconnectCount = 0;
 
   constructor(
     ws: WebSocket,
@@ -251,8 +253,8 @@ export class Connection implements ConnectionState {
     );
 
     this.compressed = false;
-    this.lastRoute = route;
-    this.lastConnectMsg = msg;
+    // this.lastRoute = route;        // see disabled auto-reconnect below
+    // this.lastConnectMsg = msg;
 
     // Resolve encoding: CHARSET negotiation (later) > client param > route > default
     if (!msg.encoding) {
@@ -312,11 +314,21 @@ export class Connection implements ConnectionState {
 
     this.tcp.on('close', () => {
       logger.info('TCP socket closed', this.remoteAddress);
-      if (!this.closed && this.tcpConnected) {
-        this.attemptReconnect();
-      } else if (!this.closed) {
+      // Always close the WebSocket session when the backend TCP drops.
+      // MUD sessions are not resumable: silently reconnecting under the
+      // same PROXY-protocol source IP leaves the MUD's old session in
+      // linkdead state and causes SCAM duplicate-connection rejections
+      // on the new attempt.
+      if (!this.closed) {
         setTimeout(() => this.close(), 500);
       }
+      // Previous behaviour (auto-reconnect, disabled — see commented
+      // attemptReconnect method below for the full implementation):
+      // if (!this.closed && this.tcpConnected) {
+      //   this.attemptReconnect();
+      // } else if (!this.closed) {
+      //   setTimeout(() => this.close(), 500);
+      // }
     });
 
     this.tcp.on('error', (err: Error) => {
@@ -329,100 +341,106 @@ export class Connection implements ConnectionState {
     });
   }
 
-  private attemptReconnect(): void {
-    if (
-      !this.lastRoute ||
-      this.reconnectCount >= this.config.reconnectAttempts
-    ) {
-      if (this.reconnectCount > 0) {
-        this.sendMessage(
-          'Reconnection failed after ' +
-            this.reconnectCount +
-            ' attempts.\r\n',
-        );
-      }
-      setTimeout(() => this.close(), 500);
-      return;
-    }
-
-    this.reconnectCount++;
-    metrics.inc('proxy_reconnect_attempts_total');
-    const delay = this.config.reconnectDelayMs * this.reconnectCount;
-
-    logger.info(
-      `Reconnect attempt ${this.reconnectCount}/${this.config.reconnectAttempts} in ${delay}ms`,
-      this.remoteAddress,
-    );
-    this.sendMessage(
-      `Connection lost. Reconnecting (${this.reconnectCount}/${this.config.reconnectAttempts})...\r\n`,
-    );
-
-    // Clean up old TCP socket
-    if (this.tcp) {
-      this.tcp.removeAllListeners();
-      this.tcp.destroy();
-      this.tcp = null;
-    }
-
-    // Reset negotiation state for reconnect
-    this.negotiator.destroy();
-    this.negotiator = new TelnetNegotiator(this.config);
-    this.compressed = false;
-
-    setTimeout(() => {
-      if (this.closed || !this.lastRoute) return;
-
-      const route = this.lastRoute;
-      metrics.inc('proxy_tcp_connections_total');
-
-      this.tcp = net.createConnection(
-        {
-          host: route.host,
-          port: route.port,
-          timeout: this.config.connectTimeoutMs,
-        },
-        async () => {
-          this.tcp!.setTimeout(0);
-          await this.sendProxyHeader(route);
-          this.tcp!.resume();
-          logger.info(
-            `Reconnected to ${route.host}:${route.port}`,
-            this.remoteAddress,
-          );
-          metrics.inc('proxy_reconnect_successes_total');
-          this.reconnectCount = 0;
-          this.sendMessage('Reconnected.\r\n');
-          this.resetIdleTimer();
-        },
-      );
-
-      this.tcp.pause();
-
-      this.tcp.on('data', (data: Buffer) => {
-        metrics.inc('proxy_messages_from_mud_total');
-        metrics.inc('proxy_bytes_from_mud_total', data.length);
-        this.resetIdleTimer();
-        this.handleMudData(data);
-      });
-
-      this.tcp.on('close', () => {
-        if (!this.closed) this.attemptReconnect();
-      });
-
-      this.tcp.on('timeout', () => {
-        metrics.inc('proxy_tcp_errors_total');
-        if (!this.closed) this.attemptReconnect();
-      });
-
-      this.tcp.on('error', (err: Error) => {
-        metrics.inc('proxy_tcp_errors_total');
-        logger.error(
-          `Reconnect TCP error: ${err.message}`,
-          this.remoteAddress,
-        );
-      });
-    }, delay);
-  }
+  // ─── Auto-reconnect (disabled) ─────────────────────────────────────
+  // When the TCP socket between the proxy and the MUD drops, the proxy
+  // used to try to reconnect transparently (up to RECONNECT_ATTEMPTS)
+  // with the same PROXY-protocol source IP. In practice this caused
+  // MUD-side SCAM (same-connection-anti-multi) checks to reject the
+  // new attempt: the MUD has not yet reaped its previous interactive
+  // object for that IP, so it counts both sockets and refuses the new
+  // one. The reconnect logic also triggered tight loops when the
+  // backend MUD was crash-looping (e.g. ancient-kingdoms during the
+  // 2026-05 nftables incident), producing zombie connections that
+  // outlived the user's WebSocket session.
+  //
+  // The replacement behaviour is: any backend TCP close terminates
+  // the WebSocket session. The user reconnects from the web client
+  // like a new session. This costs the user one extra login but
+  // avoids the zombie-connection class of problems entirely.
+  //
+  // The code below is kept commented out for reference in case we
+  // ever want to bring a sane version back (e.g. only triggered by
+  // server-side restarts that the MUD itself signals, not by any
+  // TCP close).
+  //
+  // private attemptReconnect(): void {
+  //   if (
+  //     !this.lastRoute ||
+  //     this.reconnectCount >= this.config.reconnectAttempts
+  //   ) {
+  //     if (this.reconnectCount > 0) {
+  //       this.sendMessage(
+  //         'Reconnection failed after ' +
+  //           this.reconnectCount +
+  //           ' attempts.\r\n',
+  //       );
+  //     }
+  //     setTimeout(() => this.close(), 500);
+  //     return;
+  //   }
+  //
+  //   this.reconnectCount++;
+  //   metrics.inc('proxy_reconnect_attempts_total');
+  //   const delay = this.config.reconnectDelayMs * this.reconnectCount;
+  //
+  //   logger.info(
+  //     `Reconnect attempt ${this.reconnectCount}/${this.config.reconnectAttempts} in ${delay}ms`,
+  //     this.remoteAddress,
+  //   );
+  //   this.sendMessage(
+  //     `Connection lost. Reconnecting (${this.reconnectCount}/${this.config.reconnectAttempts})...\r\n`,
+  //   );
+  //
+  //   if (this.tcp) {
+  //     this.tcp.removeAllListeners();
+  //     this.tcp.destroy();
+  //     this.tcp = null;
+  //   }
+  //
+  //   this.negotiator.destroy();
+  //   this.negotiator = new TelnetNegotiator(this.config);
+  //   this.compressed = false;
+  //
+  //   setTimeout(() => {
+  //     if (this.closed || !this.lastRoute) return;
+  //     const route = this.lastRoute;
+  //     metrics.inc('proxy_tcp_connections_total');
+  //     this.tcp = net.createConnection(
+  //       { host: route.host, port: route.port,
+  //         timeout: this.config.connectTimeoutMs },
+  //       async () => {
+  //         this.tcp!.setTimeout(0);
+  //         await this.sendProxyHeader(route);
+  //         this.tcp!.resume();
+  //         logger.info(`Reconnected to ${route.host}:${route.port}`,
+  //                     this.remoteAddress);
+  //         metrics.inc('proxy_reconnect_successes_total');
+  //         this.reconnectCount = 0;
+  //         this.sendMessage('Reconnected.\r\n');
+  //         this.resetIdleTimer();
+  //       },
+  //     );
+  //     this.tcp.pause();
+  //     this.tcp.on('data', (data: Buffer) => {
+  //       metrics.inc('proxy_messages_from_mud_total');
+  //       metrics.inc('proxy_bytes_from_mud_total', data.length);
+  //       this.resetIdleTimer();
+  //       this.handleMudData(data);
+  //     });
+  //     this.tcp.on('close', () => {
+  //       if (!this.closed) this.attemptReconnect();
+  //     });
+  //     this.tcp.on('timeout', () => {
+  //       metrics.inc('proxy_tcp_errors_total');
+  //       if (!this.closed) this.attemptReconnect();
+  //     });
+  //     this.tcp.on('error', (err: Error) => {
+  //       metrics.inc('proxy_tcp_errors_total');
+  //       logger.error(`Reconnect TCP error: ${err.message}`,
+  //                    this.remoteAddress);
+  //     });
+  //   }, delay);
+  // }
 
   private handleMudData(data: Buffer): void {
     if (this.config.debug) {

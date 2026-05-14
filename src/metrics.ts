@@ -86,11 +86,13 @@ metrics.counter(
   'proxy_rate_limited_total',
   'Total connections rejected by rate limiter',
 );
-metrics.counter(
-  'proxy_reconnect_attempts_total',
-  'Total automatic reconnection attempts',
-);
-metrics.counter(
-  'proxy_reconnect_successes_total',
-  'Total successful automatic reconnections',
-);
+// Auto-reconnect counters — disabled along with the auto-reconnect logic
+// in connection.ts. Kept commented in case the feature is reinstated.
+// metrics.counter(
+//   'proxy_reconnect_attempts_total',
+//   'Total automatic reconnection attempts',
+// );
+// metrics.counter(
+//   'proxy_reconnect_successes_total',
+//   'Total successful automatic reconnections',
+// );

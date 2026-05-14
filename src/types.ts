@@ -20,8 +20,10 @@ export interface ProxyConfig {
   idleTimeoutMs: number;
   pingIntervalMs: number;
   pongTimeoutMs: number;
-  reconnectAttempts: number;
-  reconnectDelayMs: number;
+  // Auto-reconnect was removed (see connection.ts); these are kept as
+  // commented references in case the feature is reinstated.
+  // reconnectAttempts: number;
+  // reconnectDelayMs: number;
   rateLimitPerIp: number;
   rateLimitWindowMs: number;
   enableLegacyRouting: boolean;
