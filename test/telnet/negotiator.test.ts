@@ -20,6 +20,7 @@ function makeConnection(
     tcp: null,
     writeTcp: sinon.stub(),
     sendToClient: sinon.stub(),
+    sendJsonToClient: sinon.stub(),
     ...overrides,
   };
 }
@@ -185,12 +186,30 @@ describe('TelnetNegotiator', () => {
       expect(first.length).to.equal(0);
       expect(second.toString()).to.equal('after');
 
-      const send = conn.sendToClient as sinon.SinonStub;
-      expect(send.calledOnce).to.be.true;
-      const forwarded = send.firstCall.args[0] as Buffer;
-      expect(forwarded.subarray(3, forwarded.length - 2).toString()).to.equal(
-        payload,
+      const sendJson = conn.sendJsonToClient as sinon.SinonStub;
+      expect(sendJson.calledOnce).to.be.true;
+      expect(sendJson.firstCall.args[0]).to.deep.equal({ gmcp: payload });
+    });
+
+    it('forwards GMCP subnegotiations as JSON messages, never raw telnet framing', () => {
+      const conn = makeConnection();
+      const payload = 'Char.Status {"hp":100}';
+
+      negotiator.processServerData(
+        Buffer.concat([
+          Buffer.from([T.IAC, T.SB, T.GMCP]),
+          Buffer.from(payload),
+          Buffer.from([T.IAC, T.SE]),
+        ]),
+        conn,
       );
+
+      const sendJson = conn.sendJsonToClient as sinon.SinonStub;
+      expect(sendJson.calledOnce).to.be.true;
+      expect(sendJson.firstCall.args[0]).to.deep.equal({ gmcp: payload });
+      // The raw byte path must not carry the frame: on latin1 encodings
+      // the 0xff framing bytes would be mangled into text.
+      expect((conn.sendToClient as sinon.SinonStub).called).to.be.false;
     });
 
     it('should unescape IAC IAC to a literal 0xff byte', () => {

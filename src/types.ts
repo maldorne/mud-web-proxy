@@ -96,6 +96,7 @@ export interface ConnectionState {
   tcp: Socket | null;
   writeTcp(data: Buffer | string): void;
   sendToClient(data: Buffer): void;
+  sendJsonToClient(obj: unknown): void;
 }
 
 export interface ChatEntry {

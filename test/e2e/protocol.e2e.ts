@@ -122,9 +122,11 @@ describe('E2E: telnet protocol negotiation', function () {
     // MUD sends a GMCP message
     mud.sendGMCP('Char.Status {"hp":100,"mp":50}');
 
-    // The GMCP data should arrive as part of the telnet stream
+    // The GMCP data must arrive as a JSON control message (immune to
+    // the encoding conversion applied to the raw text stream)
     const received = await messagePromise;
-    expect(received.length).to.be.greaterThan(0);
+    const msg = JSON.parse(String(received)) as { gmcp: string };
+    expect(msg).to.deep.equal({ gmcp: 'Char.Status {"hp":100,"mp":50}' });
 
     ws.close();
   });

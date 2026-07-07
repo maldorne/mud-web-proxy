@@ -490,6 +490,16 @@ export class Connection implements ConnectionState {
     });
   }
 
+  /**
+   * Send a JSON control message to the client as a text frame. Bypasses
+   * encoding conversion and compression: protocol messages (gmcp, chat...)
+   * must arrive intact regardless of the MUD's text encoding.
+   */
+  sendJsonToClient(obj: unknown): void {
+    if (this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify(obj));
+  }
+
   writeTcp(data: Buffer | string): void {
     if (!this.tcp || !this.tcp.writable) return;
 

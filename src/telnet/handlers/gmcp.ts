@@ -38,10 +38,11 @@ export class GmcpHandler implements TelnetOptionHandler {
   }
 
   handleSB(data: Buffer, connection: ConnectionState): void {
-    // Forward GMCP subnegotiation data to the client as-is (wrapped in IAC SB/SE)
-    const start = Buffer.from([T.IAC, T.SB, T.GMCP]);
-    const stop = Buffer.from([T.IAC, T.SE]);
-    connection.sendToClient(Buffer.concat([start, data, stop]));
+    // Forward GMCP subnegotiation data to the client as a JSON message.
+    // Raw IAC SB/SE framing would be mangled by the encoding conversion
+    // in sendToClient on non-utf8 routes (0xff decodes as 'ÿ' in latin1);
+    // GMCP payloads are always UTF-8 per spec, so a JSON text frame is safe.
+    connection.sendJsonToClient({ gmcp: data.toString('utf8') });
   }
 
   sendGMCP(connection: ConnectionState, msg: string): void {
