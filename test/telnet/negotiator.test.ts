@@ -119,6 +119,90 @@ describe('TelnetNegotiator', () => {
     expect(writeTcp.called).to.be.false;
   });
 
+  describe('chunk-boundary handling', () => {
+    const GA = 249; // telnet Go Ahead, sent by LPmuds after prompts
+
+    it('should strip IAC GA arriving complete at the end of a chunk', () => {
+      const conn = makeConnection();
+      const data = Buffer.concat([
+        Buffer.from('> '),
+        Buffer.from([T.IAC, GA]),
+      ]);
+
+      const result = negotiator.processServerData(data, conn);
+
+      expect(result.toString()).to.equal('> ');
+    });
+
+    it('should not leak a lone trailing IAC when GA arrives in the next chunk', () => {
+      const conn = makeConnection();
+
+      const first = negotiator.processServerData(
+        Buffer.concat([Buffer.from('> '), Buffer.from([T.IAC])]),
+        conn,
+      );
+      const second = negotiator.processServerData(
+        Buffer.concat([Buffer.from([GA]), Buffer.from('next')]),
+        conn,
+      );
+
+      expect(first.toString()).to.equal('> ');
+      expect(second.toString()).to.equal('next');
+    });
+
+    it('should complete an IAC WILL split before its option byte', () => {
+      const conn = makeConnection();
+
+      const first = negotiator.processServerData(
+        Buffer.from([T.IAC, T.WILL]),
+        conn,
+      );
+      const second = negotiator.processServerData(Buffer.from([T.ECHO]), conn);
+
+      expect(first.length).to.equal(0);
+      expect(second.length).to.equal(0);
+      expect(conn.passwordMode).to.be.true;
+    });
+
+    it('should buffer an IAC SB subnegotiation split across chunks', () => {
+      const conn = makeConnection();
+      const payload = 'Char.Vitals {"hp":10}';
+      const sb = Buffer.concat([
+        Buffer.from([T.IAC, T.SB, T.GMCP]),
+        Buffer.from(payload),
+      ]);
+
+      const first = negotiator.processServerData(sb.subarray(0, 10), conn);
+      const second = negotiator.processServerData(
+        Buffer.concat([
+          sb.subarray(10),
+          Buffer.from([T.IAC, T.SE]),
+          Buffer.from('after'),
+        ]),
+        conn,
+      );
+
+      expect(first.length).to.equal(0);
+      expect(second.toString()).to.equal('after');
+
+      const send = conn.sendToClient as sinon.SinonStub;
+      expect(send.calledOnce).to.be.true;
+      const forwarded = send.firstCall.args[0] as Buffer;
+      expect(forwarded.subarray(3, forwarded.length - 2).toString()).to.equal(
+        payload,
+      );
+    });
+
+    it('should unescape IAC IAC to a literal 0xff byte', () => {
+      const conn = makeConnection();
+      const data = Buffer.from([0x61, T.IAC, T.IAC, 0x62]);
+
+      const result = negotiator.processServerData(data, conn);
+
+      expect([...result]).to.deep.equal([0x61, 0xff, 0x62]);
+    });
+  });
+
   it('should handle CHARSET sub-negotiation for UTF-8', () => {
     const conn = makeConnection();
 
