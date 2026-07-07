@@ -29,8 +29,57 @@ export class MsdpHandler implements TelnetOptionHandler {
     }
   }
 
-  handleSB(_data: Buffer, _connection: ConnectionState): void {
-    // MSDP SB data is forwarded to client as-is
+  handleSB(data: Buffer, connection: ConnectionState): void {
+    // Parse flat MSDP VAR/VAL pairs and forward each one to the client
+    // as a JSON message ({msdp: {key, val}}), mirroring the GMCP path:
+    // raw IAC framing would be mangled by encoding conversion, and JSON
+    // is what the client already speaks in the other direction. Repeated
+    // VALs for one VAR become an array; nested tables are not supported.
+    for (const pair of MsdpHandler.parsePairs(data)) {
+      connection.sendJsonToClient({ msdp: pair });
+    }
+  }
+
+  static parsePairs(data: Buffer): { key: string; val: string | string[] }[] {
+    const pairs: { key: string; val: string | string[] }[] = [];
+    let key = '';
+    let vals: string[] = [];
+    let start = -1;
+    let inVal = false;
+
+    const closeChunk = (end: number) => {
+      if (start === -1) return;
+      const text = data.subarray(start, end).toString('utf8');
+      if (inVal) vals.push(text);
+      else key = text;
+      start = -1;
+    };
+    const closePair = () => {
+      if (key && vals.length > 0) {
+        pairs.push({ key, val: vals.length === 1 ? vals[0] : vals });
+      }
+      key = '';
+      vals = [];
+    };
+
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] === T.MSDP_VAR) {
+        closeChunk(i);
+        closePair();
+        inVal = false;
+        start = i + 1;
+      } else if (data[i] === T.MSDP_VAL) {
+        closeChunk(i);
+        inVal = true;
+        start = i + 1;
+      } else if (start === -1) {
+        start = i;
+      }
+    }
+    closeChunk(data.length);
+    closePair();
+
+    return pairs;
   }
 
   sendPair(connection: ConnectionState, key: string, val: string): void {

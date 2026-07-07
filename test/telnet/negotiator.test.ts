@@ -212,6 +212,59 @@ describe('TelnetNegotiator', () => {
       expect((conn.sendToClient as sinon.SinonStub).called).to.be.false;
     });
 
+    it('forwards MSDP VAR/VAL pairs as JSON messages', () => {
+      const conn = makeConnection();
+
+      const result = negotiator.processServerData(
+        Buffer.concat([
+          Buffer.from([T.IAC, T.SB, T.MSDP, T.MSDP_VAR]),
+          Buffer.from('HEALTH'),
+          Buffer.from([T.MSDP_VAL]),
+          Buffer.from('100'),
+          Buffer.from([T.MSDP_VAR]),
+          Buffer.from('MANA'),
+          Buffer.from([T.MSDP_VAL]),
+          Buffer.from('50'),
+          Buffer.from([T.IAC, T.SE]),
+        ]),
+        conn,
+      );
+
+      expect(result.length).to.equal(0);
+      const sendJson = conn.sendJsonToClient as sinon.SinonStub;
+      expect(sendJson.callCount).to.equal(2);
+      expect(sendJson.firstCall.args[0]).to.deep.equal({
+        msdp: { key: 'HEALTH', val: '100' },
+      });
+      expect(sendJson.secondCall.args[0]).to.deep.equal({
+        msdp: { key: 'MANA', val: '50' },
+      });
+      expect((conn.sendToClient as sinon.SinonStub).called).to.be.false;
+    });
+
+    it('forwards repeated MSDP VAL entries for one VAR as an array', () => {
+      const conn = makeConnection();
+
+      negotiator.processServerData(
+        Buffer.concat([
+          Buffer.from([T.IAC, T.SB, T.MSDP, T.MSDP_VAR]),
+          Buffer.from('FLAGS'),
+          Buffer.from([T.MSDP_VAL]),
+          Buffer.from('pvp'),
+          Buffer.from([T.MSDP_VAL]),
+          Buffer.from('quiet'),
+          Buffer.from([T.IAC, T.SE]),
+        ]),
+        conn,
+      );
+
+      const sendJson = conn.sendJsonToClient as sinon.SinonStub;
+      expect(sendJson.calledOnce).to.be.true;
+      expect(sendJson.firstCall.args[0]).to.deep.equal({
+        msdp: { key: 'FLAGS', val: ['pvp', 'quiet'] },
+      });
+    });
+
     it('should unescape IAC IAC to a literal 0xff byte', () => {
       const conn = makeConnection();
       const data = Buffer.from([0x61, T.IAC, T.IAC, 0x62]);
