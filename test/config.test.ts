@@ -17,6 +17,7 @@ describe('loadConfig', () => {
     expect(config.compress).to.be.true;
     expect(config.enableLegacyRouting).to.be.true;
     expect(config.maxConnections).to.equal(500);
+    expect(config.maxPayloadBytes).to.equal(65536);
     expect(config.tls.enabled).to.be.false;
     expect(config.chat.enabled).to.be.true;
     expect(config.allowedOrigins).to.deep.equal(['*']);

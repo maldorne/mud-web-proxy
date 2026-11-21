@@ -20,7 +20,10 @@ export const clientMessageSchema = z
     msdp: z
       .object({
         key: z.string().max(128),
-        val: z.union([z.string().max(1024), z.array(z.string().max(1024))]),
+        val: z.union([
+          z.string().max(1024),
+          z.array(z.string().max(1024)).max(256),
+        ]),
       })
       .optional(),
     gmcp: z.string().max(4096).optional(),

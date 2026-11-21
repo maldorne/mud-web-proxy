@@ -186,3 +186,39 @@ describe('E2E: compressed proxy', () => {
     ws.close();
   });
 });
+
+describe('E2E: max payload', () => {
+  let telnet: MockTelnetServer;
+  let proxy: ProxyServer;
+  let proxyPort: number;
+
+  before(async () => {
+    telnet = new MockTelnetServer();
+    await telnet.start();
+    const result = await startProxy(telnet.port, { maxPayloadBytes: 1024 });
+    proxy = result.proxy;
+    proxyPort = result.port;
+  });
+
+  after(async () => {
+    await proxy.shutdown();
+    await telnet.stop();
+  });
+
+  it('should keep the connection open for messages under the limit', async () => {
+    const ws = await connectClient(proxyPort);
+    ws.send(JSON.stringify({ gmcp: 'a'.repeat(512) }));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(ws.readyState).to.equal(WebSocket.OPEN);
+    ws.close();
+  });
+
+  it('should close the connection with 1009 when a message is too big', async () => {
+    const ws = await connectClient(proxyPort);
+    const closed = new Promise<number>((resolve) =>
+      ws.on('close', (code) => resolve(code)),
+    );
+    ws.send(JSON.stringify({ gmcp: 'a'.repeat(2048) }));
+    expect(await closed).to.equal(1009);
+  });
+});

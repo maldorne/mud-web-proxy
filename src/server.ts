@@ -27,7 +27,12 @@ export class ProxyServer {
 
     // Create HTTP(S) server
     this.httpServer = this.createHttpServer();
-    this.wsServer = new WebSocketServer({ server: this.httpServer });
+    // ws defaults to a 100 MiB max payload; client messages are tiny
+    // (commands, small JSON), so cap frames well before JSON.parse.
+    this.wsServer = new WebSocketServer({
+      server: this.httpServer,
+      maxPayload: config.maxPayloadBytes,
+    });
     this.chat = new Chat(config, () => Array.from(this.connections));
     this.rateLimiter = new RateLimiter(
       config.rateLimitPerIp,

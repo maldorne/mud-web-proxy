@@ -150,6 +150,7 @@ All configuration is done through environment variables:
 | Variable               | Default   | Description                               |
 | ---------------------- | --------- | ----------------------------------------- |
 | `MAX_CONNECTIONS`      | `500`     | Maximum concurrent WebSocket connections  |
+| `MAX_PAYLOAD_BYTES`    | `65536`   | Max size of a single WebSocket message    |
 | `RATE_LIMIT_PER_IP`    | `10`      | Max connections per IP per window         |
 | `RATE_LIMIT_WINDOW_MS` | `60000`   | Rate limit window in milliseconds         |
 | `CONNECT_TIMEOUT_MS`   | `10000`   | TCP connect timeout                       |
