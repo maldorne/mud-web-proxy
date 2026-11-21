@@ -222,3 +222,84 @@ describe('E2E: max payload', () => {
     expect(await closed).to.equal(1009);
   });
 });
+
+describe('E2E: origin and rate limiting', () => {
+  let telnet: MockTelnetServer;
+  let proxy: ProxyServer;
+  let proxyPort: number;
+
+  const open = (headers: Record<string, string> = {}) =>
+    new Promise<WebSocket>((resolve, reject) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${proxyPort}`, { headers });
+      ws.on('open', () => resolve(ws));
+      ws.on('error', reject);
+    });
+
+  const closesSoon = (ws: WebSocket) =>
+    new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => resolve(false), 300);
+      ws.once('close', () => {
+        clearTimeout(timer);
+        resolve(true);
+      });
+    });
+
+  before(async () => {
+    telnet = new MockTelnetServer();
+    await telnet.start();
+    const result = await startProxy(telnet.port, {
+      allowedOrigins: ['https://maldorne.org'],
+      rateLimitPerIp: 2,
+      rateLimitWindowMs: 60_000,
+    });
+    proxy = result.proxy;
+    proxyPort = result.port;
+  });
+
+  after(async () => {
+    await proxy.shutdown();
+    await telnet.stop();
+  });
+
+  it('should close connections from a disallowed origin', async () => {
+    const ws = await open({
+      origin: 'https://evil.example.com',
+      'x-forwarded-for': '10.0.0.1',
+    });
+    expect(await closesSoon(ws)).to.be.true;
+  });
+
+  it('should accept connections from an allowed origin', async () => {
+    const ws = await open({
+      origin: 'https://maldorne.org',
+      'x-forwarded-for': '10.0.0.2',
+    });
+    expect(await closesSoon(ws)).to.be.false;
+    ws.close();
+  });
+
+  it('should rate limit by client IP', async () => {
+    const headers = { 'x-forwarded-for': '10.0.0.3' };
+    const ws1 = await open(headers);
+    const ws2 = await open(headers);
+    const ws3 = await open(headers);
+
+    expect(await closesSoon(ws3)).to.be.true;
+    expect(ws1.readyState).to.equal(WebSocket.OPEN);
+    expect(ws2.readyState).to.equal(WebSocket.OPEN);
+    ws1.close();
+    ws2.close();
+  });
+
+  it('should key the rate limit on the first X-Forwarded-For entry', async () => {
+    for (let i = 0; i < 2; i++) {
+      (await open({ 'x-forwarded-for': '10.0.0.4, 172.16.0.1' })).close();
+    }
+    const blocked = await open({ 'x-forwarded-for': '10.0.0.4' });
+    expect(await closesSoon(blocked)).to.be.true;
+
+    const other = await open({ 'x-forwarded-for': '10.0.0.5, 172.16.0.1' });
+    expect(await closesSoon(other)).to.be.false;
+    other.close();
+  });
+});

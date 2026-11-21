@@ -15,12 +15,18 @@ export class MockTelnetServer {
   private connections: net.Socket[] = [];
   private accepted = 0;
   private claimed = 0;
+  private latest: net.Socket | null = null;
+  private latestData: Buffer[] = [];
   port = 0;
 
   constructor() {
     this.server = net.createServer((socket) => {
       this.connections.push(socket);
       this.accepted++;
+      this.latest = socket;
+      const chunks: Buffer[] = [];
+      this.latestData = chunks;
+      socket.on('data', (data: Buffer) => chunks.push(data));
       socket.on('close', () => {
         const idx = this.connections.indexOf(socket);
         if (idx !== -1) this.connections.splice(idx, 1);
@@ -78,6 +84,30 @@ export class MockTelnetServer {
         resolve();
       });
     });
+  }
+
+  /** Everything received on the most recently accepted connection. */
+  receivedFromLatest(): Buffer {
+    return Buffer.concat(this.latestData);
+  }
+
+  /** Wait until the latest connection has received data matching `test`. */
+  async waitForReceived(
+    test: (data: Buffer) => boolean,
+    timeoutMs = 2000,
+  ): Promise<Buffer> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const data = this.receivedFromLatest();
+      if (test(data)) return data;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error('Timeout waiting for data on telnet connection');
+  }
+
+  /** Abruptly close the most recently accepted connection (MUD drop). */
+  dropLatest(): void {
+    this.latest?.destroy();
   }
 
   get connectionCount(): number {
