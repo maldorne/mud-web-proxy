@@ -35,7 +35,7 @@ When deployed inside a Docker cluster, TLS termination is handled by a reverse p
 
 ### Resilience
 
-  * Automatic reconnection to MUD servers on TCP disconnect (configurable attempts and delay with exponential backoff)
+  * No silent reconnection: when the MUD drops the TCP connection the WebSocket is closed too (MUD sessions are not resumable, and reconnecting under the same PROXY-protocol IP would leave a linkdead session behind)
   * WebSocket ping/pong keepalives to detect dead clients
   * Connect timeout and idle timeout for TCP connections
   * Graceful shutdown with client notification (SIGTERM/SIGINT)
@@ -167,8 +167,6 @@ leaving it `false` makes every player appear with the reverse proxy's IP.
 | `IDLE_TIMEOUT_MS`      | `1800000` | Idle connection timeout (30 min)          |
 | `PING_INTERVAL_MS`     | `30000`   | WebSocket ping interval                   |
 | `PONG_TIMEOUT_MS`      | `10000`   | Pong response timeout                     |
-| `RECONNECT_ATTEMPTS`   | `3`       | Auto-reconnect attempts on TCP disconnect |
-| `RECONNECT_DELAY_MS`   | `2000`    | Base delay between reconnect attempts     |
 
 ### Chat
 
