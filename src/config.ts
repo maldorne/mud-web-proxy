@@ -64,6 +64,7 @@ export function loadConfig(): ProxyConfig {
     allowedOrigins: parseOrigins(env.ALLOWED_ORIGINS),
     maxConnections: parseInt(env.MAX_CONNECTIONS, 500),
     maxPayloadBytes: parseInt(env.MAX_PAYLOAD_BYTES, 64 * 1024),
+    trustProxy: parseBoolean(env.TRUST_PROXY, false),
     connectTimeoutMs: parseInt(env.CONNECT_TIMEOUT_MS, 10_000),
     idleTimeoutMs: parseInt(env.IDLE_TIMEOUT_MS, 30 * 60 * 1000),
     pingIntervalMs: parseInt(env.PING_INTERVAL_MS, 30_000),

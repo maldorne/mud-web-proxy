@@ -17,6 +17,7 @@ export interface ProxyConfig {
   allowedOrigins: string[];
   maxConnections: number;
   maxPayloadBytes: number;
+  trustProxy: boolean;
   connectTimeoutMs: number;
   idleTimeoutMs: number;
   pingIntervalMs: number;

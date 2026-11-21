@@ -249,6 +249,7 @@ describe('E2E: origin and rate limiting', () => {
     await telnet.start();
     const result = await startProxy(telnet.port, {
       allowedOrigins: ['https://maldorne.org'],
+      trustProxy: true,
       rateLimitPerIp: 2,
       rateLimitWindowMs: 60_000,
     });
@@ -301,5 +302,66 @@ describe('E2E: origin and rate limiting', () => {
     const other = await open({ 'x-forwarded-for': '10.0.0.5, 172.16.0.1' });
     expect(await closesSoon(other)).to.be.false;
     other.close();
+  });
+});
+
+describe('E2E: X-Forwarded-For without TRUST_PROXY', () => {
+  let telnet: MockTelnetServer;
+  let proxy: ProxyServer;
+  let proxyPort: number;
+
+  before(async () => {
+    telnet = new MockTelnetServer();
+    await telnet.start();
+    const result = await startProxy(telnet.port, {
+      trustProxy: false,
+      rateLimitPerIp: 2,
+      rateLimitWindowMs: 60_000,
+      routes: {
+        pp: { host: '127.0.0.1', port: telnet.port, proxyProtocol: true },
+      },
+    });
+    proxy = result.proxy;
+    proxyPort = result.port;
+  });
+
+  after(async () => {
+    await proxy.shutdown();
+    await telnet.stop();
+  });
+
+  const open = (xff: string) =>
+    new Promise<WebSocket>((resolve, reject) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${proxyPort}`, {
+        headers: { 'x-forwarded-for': xff },
+      });
+      ws.on('open', () => resolve(ws));
+      ws.on('error', reject);
+    });
+
+  it('should send the socket address, not the header, in the PROXY header', async () => {
+    const ws = await open('6.6.6.6');
+    sendConnect(ws, { mud: 'pp' });
+    await telnet.waitForConnection();
+
+    const data = await telnet.waitForReceived((d) => d.includes('\r\n'));
+    const header = data.toString('latin1').split('\r\n')[0];
+    expect(header).to.match(/^PROXY TCP4 127\.0\.0\.1 /);
+    expect(header).to.not.include('6.6.6.6');
+    ws.close();
+  });
+
+  it('should not let a spoofed header bypass the rate limit', async () => {
+    // The previous test already used one slot for 127.0.0.1
+    (await open('7.7.7.1')).close();
+    const blocked = await open('7.7.7.2');
+    const closed = await new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => resolve(false), 300);
+      blocked.once('close', () => {
+        clearTimeout(timer);
+        resolve(true);
+      });
+    });
+    expect(closed).to.be.true;
   });
 });

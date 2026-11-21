@@ -53,6 +53,7 @@ When deployed inside a Docker cluster, TLS termination is handled by a reverse p
 
   * Zod-based runtime validation of all client messages
   * Configurable origin allowlist
+  * `X-Forwarded-For` ignored unless `TRUST_PROXY=true` (no IP spoofing when exposed directly)
   * HTTP security headers (HSTS, X-Content-Type-Options, X-Frame-Options, etc.)
   * No `eval()`, no hot-reload, no unsafe code patterns
 
@@ -101,6 +102,7 @@ mud-web-proxy:
     NODE_ENV: "production"
     COMPRESS: "true"
     ENABLE_LEGACY_ROUTING: "true"
+    TRUST_PROXY: "true"
     ALLOWED_ORIGINS: "https://maldorne.org"
     ALLOWED_HOSTS: "muds.maldorne.org"
     DEFAULT_ENCODING: "latin1"
@@ -133,6 +135,14 @@ All configuration is done through environment variables:
 | `DEBUG`         | `false`         | Enable debug logging                                 |
 | `LOG_LEVEL`     | `info`          | Log level: `debug`, `info`, `warn`, `error`          |
 | `NODE_ENV`      | —               | Set to `production` for JSON log output              |
+| `TRUST_PROXY`   | `false`         | Use `X-Forwarded-For` as client IP (see below)       |
+
+`TRUST_PROXY` must only be enabled when the proxy is reachable **exclusively**
+through a reverse proxy (Traefik, nginx...) that overwrites
+`X-Forwarded-For`. The client IP is used for rate limiting and sent to the
+MUD in the PROXY protocol header, so trusting the header on a directly
+exposed port lets any client spoof its address. Behind a reverse proxy,
+leaving it `false` makes every player appear with the reverse proxy's IP.
 
 ### Routing
 

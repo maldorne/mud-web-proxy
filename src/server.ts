@@ -132,10 +132,7 @@ export class ProxyServer {
         return;
       }
 
-      const remoteAddress =
-        req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() ??
-        req.socket.remoteAddress ??
-        'unknown';
+      const remoteAddress = this.clientAddress(req);
 
       // Check origin
       if (!this.isOriginAllowed(req.headers.origin)) {
@@ -189,6 +186,21 @@ export class ProxyServer {
         }
       });
     });
+  }
+
+  /**
+   * Resolve the client IP used for rate limiting, logs and the PROXY
+   * protocol header. X-Forwarded-For is only honoured when TRUST_PROXY is
+   * set: without a reverse proxy in front that overwrites it, any client
+   * could send an arbitrary value.
+   */
+  private clientAddress(req: IncomingMessage): string {
+    const forwarded = this.config.trustProxy
+      ? req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim()
+      : undefined;
+    const address = forwarded || req.socket.remoteAddress || 'unknown';
+    // Report IPv4 clients on a dual-stack socket as plain IPv4
+    return address.startsWith('::ffff:') ? address.slice(7) : address;
   }
 
   private isOriginAllowed(origin: string | undefined): boolean {
