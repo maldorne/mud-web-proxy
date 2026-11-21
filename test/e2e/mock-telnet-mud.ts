@@ -9,6 +9,8 @@ import * as T from '../../src/telnet/constants.js';
 export class MockTelnetMud {
   private server: net.Server;
   private connections: net.Socket[] = [];
+  private accepted = 0;
+  private claimed = 0;
   port = 0;
 
   // Track what protocols were negotiated
@@ -32,6 +34,7 @@ export class MockTelnetMud {
   constructor() {
     this.server = net.createServer((socket) => {
       this.connections.push(socket);
+      this.accepted++;
 
       socket.on('data', (data) => {
         this.received.push(data);
@@ -250,8 +253,16 @@ export class MockTelnetMud {
     }
   }
 
+  /**
+   * Wait for a connection not yet claimed by a previous call. Sockets from
+   * earlier tests may still be closing, so "any open connection" is not
+   * enough: each call claims exactly one newly accepted connection.
+   */
   async waitForConnection(timeoutMs = 5000): Promise<void> {
-    if (this.connections.length > 0) return;
+    if (this.accepted > this.claimed) {
+      this.claimed++;
+      return;
+    }
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(
         () => reject(new Error('Timeout waiting for connection')),
@@ -259,6 +270,7 @@ export class MockTelnetMud {
       );
       this.server.once('connection', () => {
         clearTimeout(timeout);
+        this.claimed++;
         resolve();
       });
     });

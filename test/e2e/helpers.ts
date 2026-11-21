@@ -13,11 +13,14 @@ import type { ProxyConfig } from '../../src/types.js';
 export class MockTelnetServer {
   private server: net.Server;
   private connections: net.Socket[] = [];
+  private accepted = 0;
+  private claimed = 0;
   port = 0;
 
   constructor() {
     this.server = net.createServer((socket) => {
       this.connections.push(socket);
+      this.accepted++;
       socket.on('close', () => {
         const idx = this.connections.indexOf(socket);
         if (idx !== -1) this.connections.splice(idx, 1);
@@ -54,9 +57,16 @@ export class MockTelnetServer {
     }
   }
 
-  /** Wait until at least one connection is established. */
+  /**
+   * Wait for a connection not yet claimed by a previous call. Sockets from
+   * earlier tests may still be closing, so "any open connection" is not
+   * enough: each call claims exactly one newly accepted connection.
+   */
   async waitForConnection(timeoutMs = 5000): Promise<void> {
-    if (this.connections.length > 0) return;
+    if (this.accepted > this.claimed) {
+      this.claimed++;
+      return;
+    }
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(
         () => reject(new Error('Timeout waiting for telnet connection')),
@@ -64,6 +74,7 @@ export class MockTelnetServer {
       );
       this.server.once('connection', () => {
         clearTimeout(timeout);
+        this.claimed++;
         resolve();
       });
     });
