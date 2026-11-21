@@ -1,14 +1,16 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npm run build
+# Drop devDependencies so only runtime packages reach the final image
+RUN npm prune --omit=dev
 
 # Production stage
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && adduser -S proxy -u 1001
 COPY --from=builder /app/dist ./dist
